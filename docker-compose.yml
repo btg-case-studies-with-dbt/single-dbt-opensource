@@ -52,6 +52,7 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
       - ./dbt:/opt/airflow/dbt
+    command: webserver
 
   airflow-scheduler:
     build:
