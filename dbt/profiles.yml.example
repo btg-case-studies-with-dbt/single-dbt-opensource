@@ -1,0 +1,50 @@
+# profiles.yml.example
+# Safe template — copy this to ~/.dbt/profiles.yml
+# This file IS committed to GitHub. profiles.yml is NOT.
+#
+# Steps:
+#   1. cp dbt/profiles.yml.example ~/.dbt/profiles.yml
+#   2. Add to ~/.zshrc:
+#        export $(grep -v '^#' ~/path/to/single-dbt-opensource/.env | xargs)
+#        export DBT_SCHEMA=dbt_yourname   # replace yourname with your first name
+#   3. source ~/.zshrc
+
+resource_utilization:
+  target: personal
+  outputs:
+    personal:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: "{{ env_var('POSTGRES_USER') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
+      dbname: "{{ env_var('POSTGRES_DB') }}"
+      schema: "{{ env_var('DBT_SCHEMA') }}"
+      threads: 4
+    ci:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: "{{ env_var('POSTGRES_USER') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
+      dbname: "{{ env_var('POSTGRES_DB') }}"
+      schema: ci
+      threads: 4
+    dev:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: "{{ env_var('POSTGRES_USER') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
+      dbname: "{{ env_var('POSTGRES_DB') }}"
+      schema: dev
+      threads: 4
+    prod:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: "{{ env_var('POSTGRES_USER') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
+      dbname: "{{ env_var('POSTGRES_DB') }}"
+      schema: prod
+      threads: 4
