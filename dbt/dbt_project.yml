@@ -1,0 +1,58 @@
+# dbt_project.yml
+# Main configuration file. Every dbt project must have exactly one.
+
+# Project name — must match profile: in profiles.yml
+name: 'resource_utilization'
+version: '1.0.0'
+
+# Format version — always 2 for modern dbt
+config-version: 2
+
+# Which connection profile to use — defined in profiles.yml
+profile: 'resource_utilization_postgres'
+
+# Where dbt looks for each type of file
+model-paths:    ["models"]
+test-paths:     ["tests"]
+seed-paths:     ["seeds"]
+macro-paths:    ["macros"]
+snapshot-paths: ["snapshots"]
+
+# Where dbt writes compiled SQL — gitignored, never commit
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Seed configuration
+seeds:
+  resource_utilization:
+    +schema: seeds
+    +post-hook:
+      - "GRANT SELECT ON {{ this }} TO analytics_engineer"
+      - "GRANT SELECT ON {{ this }} TO data_scientist"
+
+# Model configuration
+models:
+  resource_utilization:
+
+    staging:
+      +schema: staging_silver
+      +materialized: view
+      +post-hook:
+        - "GRANT SELECT ON {{ this }} TO analytics_engineer"
+        - "GRANT SELECT ON {{ this }} TO data_scientist"
+
+    intermediate:
+      +schema: staging_silver
+      +materialized: incremental
+      +post-hook:
+        - "GRANT SELECT ON {{ this }} TO analytics_engineer"
+        - "GRANT SELECT ON {{ this }} TO data_scientist"
+
+    marts:
+      +schema: mart_gold
+      +materialized: table
+      +post-hook:
+        - "GRANT SELECT ON {{ this }} TO analytics_engineer"
+        - "GRANT SELECT ON {{ this }} TO business_user"
