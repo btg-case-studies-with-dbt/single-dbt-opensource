@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: raw_bronze
+    schema: raw_bronze
+    tables:
+      - name: config_model_dimensions
+      - name: config_model_region_availability
+      - name: customer_details
+      - name: resource_accelerator_inventory
+      - name: resource_model_instance_allocation
+      - name: resource_model_utilization
+      - name: inference_user_token_usage_open_source
+      - name: inference_user_token_usage_proprietary
+      - name: revenue_account_daily
+      - name: quota_default_rate_limits
+      - name: quota_customer_rate_limit_adjustments
+      - name: quota_customer_rate_limit_requests
