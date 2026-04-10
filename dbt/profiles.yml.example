@@ -9,7 +9,7 @@
 #        export DBT_SCHEMA=dbt_yourname   # replace yourname with your first name
 #   3. source ~/.zshrc
 
-resource_utilization:
+resource_utilization_postgres:
   target: personal
   outputs:
     personal:
