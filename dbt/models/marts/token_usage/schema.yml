@@ -1,0 +1,296 @@
+version: 2
+
+models:
+
+  # ============================================================================
+  # token_usage_model_weekly
+  # ============================================================================
+  - name: token_usage_model_weekly
+    description: "Weekly token usage aggregated at model + region level. One row per model, region, and week (Sunday to Saturday). Includes WoW absolute differences."
+    columns:
+      - name: model_variant
+        description: "Model variant identifier"
+        tests:
+          - not_null
+      - name: model_type
+        description: "proprietary or open_source"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['proprietary', 'open_source']
+      - name: source_region
+        description: "AWS source region"
+        tests:
+          - not_null
+      - name: week_start_date
+        description: "Week start date (Sunday)"
+        tests:
+          - not_null
+      - name: week_end_date
+        description: "Week end date (Saturday)"
+        tests:
+          - not_null
+      - name: mean_rpm
+        description: "Mean requests per minute across all active minutes in the week"
+        tests:
+          - not_null
+      - name: peak_rpm
+        description: "Peak requests per minute in the week"
+        tests:
+          - not_null
+      - name: peak_to_mean_rpm
+        description: "Ratio of peak RPM to mean RPM — indicates spikiness of traffic"
+        tests:
+          - not_null
+      - name: mean_tpm
+        description: "Mean tokens per minute across all active minutes in the week"
+        tests:
+          - not_null
+      - name: peak_tpm
+        description: "Peak tokens per minute in the week"
+        tests:
+          - not_null
+      - name: peak_to_mean_tpm
+        description: "Ratio of peak TPM to mean TPM"
+        tests:
+          - not_null
+      - name: total_tokens
+        description: "Total tokens consumed in the week"
+        tests:
+          - not_null
+      - name: total_requests
+        description: "Total requests in the week"
+        tests:
+          - not_null
+      - name: error_rate_pct
+        description: "Percentage of requests that resulted in an error"
+      - name: wow_mean_rpm
+        description: "WoW absolute difference in mean RPM"
+      - name: wow_mean_tpm
+        description: "WoW absolute difference in mean TPM"
+      - name: wow_total_tokens
+        description: "WoW absolute difference in total tokens"
+      - name: wow_total_requests
+        description: "WoW absolute difference in total requests"
+
+  # ============================================================================
+  # token_usage_model_monthly
+  # ============================================================================
+  - name: token_usage_model_monthly
+    description: "Monthly token usage aggregated at model + region level. One row per model, region, and calendar month. Includes MoM absolute differences."
+    columns:
+      - name: model_variant
+        tests:
+          - not_null
+      - name: model_type
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['proprietary', 'open_source']
+      - name: source_region
+        tests:
+          - not_null
+      - name: month_start_date
+        tests:
+          - not_null
+      - name: month_end_date
+        tests:
+          - not_null
+      - name: mean_rpm
+        tests:
+          - not_null
+      - name: peak_rpm
+        tests:
+          - not_null
+      - name: total_tokens
+        tests:
+          - not_null
+      - name: total_requests
+        tests:
+          - not_null
+      - name: mom_mean_rpm
+        description: "MoM absolute difference in mean RPM"
+      - name: mom_mean_tpm
+        description: "MoM absolute difference in mean TPM"
+      - name: mom_total_tokens
+        description: "MoM absolute difference in total tokens"
+      - name: mom_total_requests
+        description: "MoM absolute difference in total requests"
+
+  # ============================================================================
+  # token_usage_customer_weekly
+  # ============================================================================
+  - name: token_usage_customer_weekly
+    description: "Weekly token usage aggregated at customer + model + region level. One row per account, model, region, and week (Sunday to Saturday). Includes active vs inactive minute analysis and P90/P95/P97 percentiles. WoW absolute differences included."
+    columns:
+      - name: account_id
+        tests:
+          - not_null
+      - name: model_variant
+        tests:
+          - not_null
+      - name: model_type
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['proprietary', 'open_source']
+      - name: source_region
+        tests:
+          - not_null
+      - name: week_start_date
+        tests:
+          - not_null
+      - name: week_end_date
+        tests:
+          - not_null
+      - name: active_minutes
+        description: "Number of minutes in the week with at least one request"
+        tests:
+          - not_null
+      - name: total_possible_minutes
+        description: "Total possible minutes in the week (7 x 24 x 60 = 10,080)"
+        tests:
+          - not_null
+      - name: active_minute_pct
+        description: "Percentage of minutes in the week with active usage"
+        tests:
+          - not_null
+      - name: mean_rpm_active
+        description: "Mean RPM during active minutes only"
+        tests:
+          - not_null
+      - name: mean_rpm_all_minutes
+        description: "Mean RPM across all 10,080 minutes in the week including inactive"
+        tests:
+          - not_null
+      - name: peak_rpm
+        description: "Peak RPM in the week"
+        tests:
+          - not_null
+      - name: p90_rpm
+        description: "90th percentile RPM during active minutes"
+      - name: p95_rpm
+        description: "95th percentile RPM during active minutes"
+      - name: p97_rpm
+        description: "97th percentile RPM during active minutes"
+      - name: mean_tpm_active
+        description: "Mean TPM during active minutes only"
+        tests:
+          - not_null
+      - name: mean_tpm_all_minutes
+        description: "Mean TPM across all 10,080 minutes in the week including inactive"
+        tests:
+          - not_null
+      - name: peak_tpm
+        description: "Peak TPM in the week"
+        tests:
+          - not_null
+      - name: p90_tpm
+        description: "90th percentile TPM during active minutes"
+      - name: p95_tpm
+        description: "95th percentile TPM during active minutes"
+      - name: p97_tpm
+        description: "97th percentile TPM during active minutes"
+      - name: total_requests
+        tests:
+          - not_null
+      - name: total_tokens
+        tests:
+          - not_null
+      - name: error_rate_pct
+        description: "Percentage of requests that resulted in an error"
+      - name: wow_mean_rpm_active
+        description: "WoW absolute difference in mean RPM during active minutes"
+      - name: wow_mean_tpm_active
+        description: "WoW absolute difference in mean TPM during active minutes"
+      - name: wow_total_tokens
+        description: "WoW absolute difference in total tokens"
+      - name: wow_total_requests
+        description: "WoW absolute difference in total requests"
+      - name: wow_active_minutes
+        description: "WoW absolute difference in active minutes"
+
+  # ============================================================================
+  # token_usage_customer_monthly
+  # ============================================================================
+  - name: token_usage_customer_monthly
+    description: "Monthly token usage aggregated at customer + model + region level. One row per account, model, region, and calendar month. Total possible minutes calculated per actual month length. Includes MoM absolute differences."
+    columns:
+      - name: account_id
+        tests:
+          - not_null
+      - name: model_variant
+        tests:
+          - not_null
+      - name: model_type
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['proprietary', 'open_source']
+      - name: source_region
+        tests:
+          - not_null
+      - name: month_start_date
+        tests:
+          - not_null
+      - name: month_end_date
+        tests:
+          - not_null
+      - name: active_minutes
+        tests:
+          - not_null
+      - name: total_possible_minutes
+        description: "Total possible minutes in the month based on actual month length"
+        tests:
+          - not_null
+      - name: active_minute_pct
+        tests:
+          - not_null
+      - name: mean_rpm_active
+        tests:
+          - not_null
+      - name: mean_rpm_all_minutes
+        tests:
+          - not_null
+      - name: peak_rpm
+        tests:
+          - not_null
+      - name: p90_rpm
+        description: "90th percentile RPM during active minutes"
+      - name: p95_rpm
+        description: "95th percentile RPM during active minutes"
+      - name: p97_rpm
+        description: "97th percentile RPM during active minutes"
+      - name: mean_tpm_active
+        tests:
+          - not_null
+      - name: mean_tpm_all_minutes
+        tests:
+          - not_null
+      - name: peak_tpm
+        tests:
+          - not_null
+      - name: p90_tpm
+        description: "90th percentile TPM during active minutes"
+      - name: p95_tpm
+        description: "95th percentile TPM during active minutes"
+      - name: p97_tpm
+        description: "97th percentile TPM during active minutes"
+      - name: total_requests
+        tests:
+          - not_null
+      - name: total_tokens
+        tests:
+          - not_null
+      - name: error_rate_pct
+        description: "Percentage of requests that resulted in an error"
+      - name: mom_mean_rpm_active
+        description: "MoM absolute difference in mean RPM during active minutes"
+      - name: mom_mean_tpm_active
+        description: "MoM absolute difference in mean TPM during active minutes"
+      - name: mom_total_tokens
+        description: "MoM absolute difference in total tokens"
+      - name: mom_total_requests
+        description: "MoM absolute difference in total requests"
+      - name: mom_active_minutes
+        description: "MoM absolute difference in active minutes"
