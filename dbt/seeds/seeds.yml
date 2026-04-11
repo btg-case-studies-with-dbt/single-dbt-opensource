@@ -4,10 +4,7 @@ seeds:
   - name: region_mapping
     description: "AWS region reference data — maps AWS region codes to territories, airport codes, and GovCloud flags. 29 rows, one per AWS region. Static reference table — changes only when AWS adds new regions."
     tags: ['reference', 'static', 'seeds']
-    meta:
-      owner: "Data Engineering"
-      update_frequency: "on AWS region additions only"
-
+    
     config:
       schema: seeds
       column_types:
@@ -34,8 +31,8 @@ seeds:
         tests:
           - not_null
           - accepted_values:
-              - accepted_values:
-                  values: ['US', 'North America', 'Europe', 'Asia Pacific', 'Middle East', 'Africa', 'South America', 'China', USGovCloud']
+              arguments:
+                values: ['US', 'North America', 'Europe', 'Asia Pacific', 'Middle East', 'Africa', 'South America', 'China', 'USGovCloud']
               
 
       - name: govcloud
