@@ -1,0 +1,171 @@
+version: 2
+
+exposures:
+
+  # ===========================================================================
+  # DASHBOARDS
+  # ===========================================================================
+
+  - name: executive_revenue_dashboard
+    label: "Executive Revenue Dashboard"
+    type: dashboard
+    maturity: high
+    url: https://dashboards.company.com/revenue/executive
+    description: |
+      Executive dashboard showing revenue trends, customer segments, and model performance.
+      Updated daily. Used by C-suite for monthly business reviews.
+    
+    depends_on:
+      - ref('customer_revenue_monthly')
+      - ref('customer_revenue_ytd')
+      - ref('model_revenue_monthly')
+    
+    owner:
+      name: Analytics Team
+      email: analytics@company.com
+
+  - name: customer_success_dashboard
+    label: "Customer Success Dashboard"
+    type: dashboard
+    maturity: high
+    url: https://dashboards.company.com/customer-success
+    description: |
+      Customer health metrics including token usage, revenue, and rate limit utilization.
+      Used by CS team for customer check-ins.
+    
+    depends_on:
+      - ref('customer_revenue_monthly')
+      - ref('token_usage_customer_monthly')
+    
+    owner:
+      name: Customer Success Team
+      email: cs@company.com
+
+  - name: model_performance_dashboard
+    label: "Model Performance & Utilization Dashboard"
+    type: dashboard
+    maturity: medium
+    url: https://dashboards.company.com/models/performance
+    description: |
+      Real-time model performance metrics including token usage, revenue by model,
+      and utilization patterns. Used by ML Ops team.
+    
+    depends_on:
+      - ref('model_revenue_monthly')
+      - ref('token_usage_model_monthly')
+    
+    owner:
+      name: ML Ops Team
+      email: mlops@company.com
+
+  # ===========================================================================
+  # REPORTS
+  # ===========================================================================
+
+  - name: monthly_revenue_report
+    label: "Monthly Revenue Report"
+    type: analysis
+    maturity: high
+    description: |
+      Monthly revenue analysis report sent to finance and leadership.
+      Includes revenue by customer segment, model, and region.
+      Generated on the 1st of each month.
+    
+    depends_on:
+      - ref('customer_revenue_monthly')
+      - ref('model_revenue_monthly')
+    
+    owner:
+      name: Finance Team
+      email: finance@company.com
+
+  - name: quarterly_business_review
+    label: "Quarterly Business Review (QBR)"
+    type: analysis
+    maturity: high
+    description: |
+      Comprehensive quarterly analysis of revenue, customer growth, and product usage.
+      Presented to board of directors.
+    
+    depends_on:
+      - ref('customer_revenue_ytd')
+      - ref('customer_revenue_monthly')
+      - ref('token_usage_customer_monthly')
+    
+    owner:
+      name: Strategy Team
+      email: kanjasaha@gmail.com
+
+  # ===========================================================================
+  # APPLICATIONS
+  # ===========================================================================
+
+  - name: customer_portal_api
+    label: "Customer Portal API"
+    type: application
+    maturity: high
+    url: https://portal.company.com
+    description: |
+      Customer-facing portal that shows usage statistics and billing information.
+      Queries revenue and token usage data directly via API.
+    
+    depends_on:
+      - ref('customer_revenue_monthly')
+      - ref('customer_revenue_weekly')
+      - ref('token_usage_customer_monthly')
+      - ref('token_usage_customer_weekly')
+    
+    owner:
+      name: Product Engineering
+      email: product-eng@company.com
+
+  - name: rate_limit_management_tool
+    label: "Rate Limit Management Tool"
+    type: application
+    maturity: medium
+    description: |
+      Internal tool for Customer Success to review and adjust customer rate limits.
+      Shows current limits, usage patterns, and allows requesting adjustments.
+    
+    depends_on:
+      - ref('token_usage_customer_monthly')
+    
+    owner:
+      name: Customer Success Engineering
+      email: cs-eng@company.com
+
+  # ===========================================================================
+  # NOTEBOOKS & AD-HOC ANALYSIS
+  # ===========================================================================
+
+  - name: revenue_forecasting_model
+    label: "Revenue Forecasting Model"
+    type: ml
+    maturity: medium
+    description: |
+      Machine learning model that forecasts monthly revenue based on historical patterns.
+      Used for financial planning and capacity planning.
+    
+    depends_on:
+      - ref('customer_revenue_monthly')
+      - ref('token_usage_customer_monthly')
+    
+    owner:
+      name: Data Science Team
+      email: data-science@company.com
+
+  - name: customer_churn_analysis
+    label: "Customer Churn Risk Analysis"
+    type: notebook
+    maturity: low
+    description: |
+      Jupyter notebook analyzing customer usage patterns to predict churn risk.
+      Run monthly by CS team.
+    
+    depends_on:
+      - ref('customer_revenue_monthly')
+      - ref('token_usage_customer_monthly')
+    
+    owner:
+      name: Customer Success Analytics
+      email: kanjasaha@gmail.com
