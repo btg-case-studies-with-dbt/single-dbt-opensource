@@ -80,12 +80,21 @@ models:
         data_type: varchar
         tests:
           - not_null
+              config:
+                severity: warn
+                store_failures: true
+                # store_failures: true — if you have accounts with missing segment,
+                # you want to know which ones they are so you can fix the source data.
 
       - name: vertical
         description: "Industry vertical — Technology, Financial Services, Healthcare etc."
         data_type: varchar
         tests:
           - not_null
+              config:
+                severity: warn
+                store_failures: true  
+
 
       - name: account_size
         description: "Company size classification — Enterprise, Mid-Market, SMB, Unknown."
@@ -98,12 +107,24 @@ models:
         data_type: date
         tests:
           - not_null
+              config:
+                severity: warn
+                store_failures: true
+                # store_failures: true — if you have accounts with missing month_start_date,
+                # you want to know which ones they are so you can fix the source data.
+
 
       - name: month_end_date
         description: "Last day of the calendar month."
         data_type: date
         tests:
           - not_null
+              config:
+                severity: warn
+                store_failures: true
+                # store_failures: true — if you have accounts with missing month_end_date,
+                # you want to know which ones they are so you can fix the source data.
+                
 
       - name: total_gross_revenue
         description: "Total gross revenue for the month before discounts and credits."
