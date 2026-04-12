@@ -32,7 +32,7 @@ seeds:
           - not_null
           - accepted_values:
               arguments:
-                values: ['US', 'North America', 'Europe', 'Asia Pacific', 'Middle East', 'Africa', 'South America', 'China', 'USGovCloud']
+                values: ['US', 'North America', 'Europe', 'Asia Pacific', 'Middle East', 'Africa', 'South America', 'China', 'US GovCloud']
               
 
       - name: govcloud

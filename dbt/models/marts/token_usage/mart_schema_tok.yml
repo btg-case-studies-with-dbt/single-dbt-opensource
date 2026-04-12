@@ -17,7 +17,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['proprietary', 'open_source']
+              arguments:
+                values: ['proprietary', 'open_source']
       - name: source_region
         description: "AWS source region"
         tests:
@@ -86,7 +87,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['proprietary', 'open_source']
+              arguments:
+                values: ['proprietary', 'open_source']
       - name: source_region
         tests:
           - not_null
@@ -133,7 +135,9 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['proprietary', 'open_source']
+              arguments:
+                values: ['proprietary', 'open_source']
+              
       - name: source_region
         tests:
           - not_null
@@ -226,7 +230,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['proprietary', 'open_source']
+              arguments:
+                values: ['proprietary', 'open_source']
       - name: source_region
         tests:
           - not_null

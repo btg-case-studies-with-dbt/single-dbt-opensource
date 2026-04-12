@@ -51,3 +51,4 @@ select
 from {{ source('raw_bronze', 'customer_details') }}
 -- test change
 -- test ci trigger
+-- updated: reviewing customer segmentation logic

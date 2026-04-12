@@ -1,5 +1,10 @@
 version: 2
-
+groups:
+  - name: finance
+    owner:
+      name: Finance Team
+      email: finance@company.com
+      
 models:
 
   # ============================================================================
@@ -46,7 +51,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['proprietary', 'open_source']
+              arguments:
+                values: ['proprietary', 'open_source']
 
       - name: model_family
         description: "Model family from config_model_dimensions"
@@ -139,6 +145,11 @@ models:
   # ============================================================================
   - name: int_revenue_daily
     description: "Daily revenue enriched with customer, model, and region dimensions. One row per account, model, region, and revenue date. Net revenue derived as gross revenue minus savings plan and discounts."
+    config:
+      group: finance
+      access: private
+
+
     columns:
 
       # -- Customer dimensions --

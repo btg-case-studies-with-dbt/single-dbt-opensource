@@ -18,6 +18,8 @@ seed-paths:     ["seeds"]
 macro-paths:    ["macros"]
 snapshot-paths: ["snapshots"]
 
+
+
 # Where dbt writes compiled SQL — gitignored, never commit
 target-path: "target"
 clean-targets:

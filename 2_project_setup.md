@@ -852,6 +852,7 @@ docker compose down && docker compose up -d
 ```
 
 
+
 **Airflow DAG not appearing in the UI**
 ```bash
 cd ~/Documents/btg-case-studies-with-dbt/single-dbt-opensource

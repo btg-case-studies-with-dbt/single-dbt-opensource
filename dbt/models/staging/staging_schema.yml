@@ -155,7 +155,8 @@ models:
       # Use expression_is_true for multi-column validation that no single-column
       # test can express. Fails if any row violates the expression.
       - dbt_utils.expression_is_true:
-          expression: "total_tokens >= input_tokens + output_tokens"
+          arguments:
+            expression: "total_tokens >= input_tokens + output_tokens"
           config:
             severity: warn
               # warn not error — rounding differences are possible
@@ -172,8 +173,9 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('stg_customer_details')
-              field: account_id
+              arguments:
+                to: ref('stg_customer_details')
+                field: account_id
               # Foreign key check — every account_id here must exist in
               # stg_customer_details. Catches orphaned records from accounts
               # that were deleted from the CRM but still have usage events.
@@ -181,7 +183,7 @@ models:
                 severity: warn
 
       - name: model_variant
-        description: "Model used for this request — foreign key to stg_config_model_dimensions."
+        description: "{{ doc('model_variant_dec') }}"
         tests:
           - not_null
           - relationships:
@@ -203,7 +205,8 @@ models:
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 1
+              arguments:
+                min_value: 1
               # total_tokens must be at least 1 — a request with zero tokens
               # should never reach the database. Catches bad ingestion data.
               config:
@@ -230,7 +233,8 @@ models:
 
     tests:
       - dbt_utils.expression_is_true:
-          expression: "total_tokens >= input_tokens + output_tokens"
+          arguments:
+            expression: "total_tokens >= input_tokens + output_tokens"
           config:
             severity: warn
 
@@ -318,8 +322,9 @@ models:
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 1
+              arguments:
+                min_value: 0
+                max_value: 1
               # utilisation_ratio must be between 0 and 1 — a ratio above 1
               # indicates a data error in the ingestion pipeline.
 
@@ -356,8 +361,9 @@ models:
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 100
+              arguments:
+                min_value: 0
+                max_value: 100
 
       - name: loaded_at
         description: "Timestamp when this row was inserted into the bronze layer."
@@ -395,8 +401,9 @@ models:
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 100
+              arguments:
+                min_value: 0
+                max_value: 100
 
       - name: loaded_at
         description: "Timestamp when this row was inserted into the bronze layer."
@@ -491,7 +498,8 @@ models:
       # Business rule — daily limit must be at least as large as per-minute limit * 1440 minutes
       # if it is smaller, the daily cap would be hit within the first minute of the day
       - dbt_utils.expression_is_true:
-          expression: "default_tpd >= default_tpm"
+          arguments:
+            expression: "default_tpd >= default_tpm"
           config:
             severity: warn
 
@@ -639,7 +647,8 @@ models:
        # Revenue must be non-negative — negative values indicate a refund or
       # credit note which should be modelled separately, not as negative revenue.
       - dbt_utils.expression_is_true:
-          expression: "total_gross_revenue >= 0"
+          arguments:
+            expression: "total_gross_revenue >= 0"
           config:
             severity: warn
 
