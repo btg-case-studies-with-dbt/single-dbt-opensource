@@ -1,8 +1,8 @@
 # 5 — Team Workflow & CI/CD
 
 ## Before you start
-- Completed Runbooks 3a, 3b, 3c, 4
-- Stack running, Airflow pipeline running on schedule
+- Completed Runbooks 3a, 3b, 3c, 3d, 4
+- Stack running, Airflow DAGs running on schedule
 - GitHub account, repo pushed to GitHub
 
 ---
@@ -11,7 +11,7 @@
 
 ```bash
 # Check 1 — yourname replaced in profiles.yml
-grep "yourname" dbt/profiles.yml
+grep "yourname" ~/.dbt/profiles.yml
 # Must return nothing
 
 # Check 2 — dbt shell function active
@@ -19,13 +19,13 @@ type dbt
 # Must show: dbt is a shell function
 
 # Check 3 — stack running
+cd ~/Documents/btg-case-studies-with-dbt/single-dbt-opensource
 docker compose ps
 # All 5 containers Up
 
 # Check 4 — self-hosted runner active
 ls ~/actions-runner/
 # Must show runner files including run.sh
-# If runner not running: cd ~/actions-runner && ./run.sh → confirm "Listening for Jobs"
 ```
 
 ---
@@ -37,48 +37,73 @@ Personal schema → Feature branch → Pull Request → CI runs → Code review
 → Merge to dev → PR to main → CI runs again → Production (Airflow)
 ```
 
-| Step | Who |
-|---|---|
-| Write code, test locally | You |
-| Create branch, push, open PR | You |
-| CI runs, dev build runs | GitHub Actions (automatic) |
-| Code review | Teammate |
-| Merge to main, prod deployment | Airflow (automatic) |
+| Step | Step Details | Git Commands | Command Explanation |
+|---|---|---|---|
+| 1a | New engineer Alex joins the team today | `git clone https://github.com/kanjasaha/btg-case-studies-with-dbt` | Copy the entire repo to Alex's laptop |
+| 1b | Switch to the dev branch | `git checkout dev` | Switch to the dev branch |
+| 1c | Get the latest changes from GitHub | `git pull origin dev` | Download the latest dev changes from GitHub |
+| 1d | Task: add `revenue_tier` column to `customer_revenue_monthly.sql` — create feature branch | `git checkout -b feature/add-revenue-tier` | Create a new branch from dev and switch to it |
+| 2a | Open `customer_revenue_monthly.sql`, add `revenue_tier` column logic, build and verify in pgAdmin under `dbt_alex_mart_gold` | `dbt build --target personal --select customer_revenue_monthly` | Build only `customer_revenue_monthly` in Alex's personal schema |
+| 2b | Looks good — stage the changed file | `git add dbt/models/marts/revenue/customer_revenue_monthly.sql` | Stage only the changed model file |
+| 2c | Save a snapshot of changes locally | `git commit -m "feat: add revenue_tier column to customer_revenue_monthly"` | Save changes locally with a descriptive message |
+| 3 | Test against dev environment — simulate exactly what CI will run | `dbt build --select state:modified+ --defer --state ./prod-state/` | Build all modified models and their downstream dependents — same selector CI uses |
+| 4a | Push branch to GitHub | `git push origin feature/add-revenue-tier` | Upload the feature branch to GitHub |
+| 4b | Open PR to dev | `gh pr create --base dev --title "feat: add revenue_tier to customer_revenue_monthly"` | Ask team to review the new column before merging into dev |
+| 5 | CI automatically runs — builds modified models and tests | Automatic — no command needed | GitHub Actions runs `dbt build --select state:modified+` — picks up `customer_revenue_monthly` and downstream models, runs all tests |
+| 6a | Manager reviews — checks `revenue_tier` logic, test coverage, and CI passed | GitHub UI — click Merge | Human approves and merges `feature/add-revenue-tier` into dev |
+| 6b | `pipeline_dev` triggers automatically | `pipeline_dev` Airflow DAG triggers | Airflow runs `dbt build --target dev` — `dev_mart_gold.customer_revenue_monthly` now has `revenue_tier` column |
+| 7 | Coworker Maya follows the same process on her own task tomorrow | `git checkout dev` `git pull origin dev` `git checkout -b feature/her-task` | Maya gets the latest dev including Alex's `revenue_tier` change, starts her own feature branch |
+| 8a | Release manager pulls latest dev and opens PR to main | `git checkout dev` `git pull origin dev` | Get latest dev — includes Alex's and Maya's merged changes |
+| 8b | Open PR from dev to main | `gh pr create --base main --title "release: add revenue_tier and Maya's changes"` | Ask for final review before prod deployment |
+| 9 | CI runs full test suite against main | Automatic — no command needed | GitHub Actions runs full CI — verifies `customer_revenue_monthly` with `revenue_tier` passes all tests against main |
+| 10a | Release manager approves and clicks merge | GitHub UI — click Merge | Human approves — merges dev into main |
+| 10b | `pipeline_daily` triggers automatically | `pipeline_daily` Airflow DAG triggers | Airflow runs `dbt build --target prod` — `prod_mart_gold.customer_revenue_monthly` in `prod_resource_utilization_postgres` now has `revenue_tier` column live in production |
 
 Nobody runs `dbt build --target prod` manually. Ever.
 
 ---
 
-## Git — push code to GitHub
+## Git — day to day workflow
+
+Always start from a clean dev branch before creating a feature branch:
 
 ```bash
-cd ~/Documents/btg-case-studies
-
-# Sync local with remote before starting any work
+cd ~/Documents/btg-case-studies-with-dbt/single-dbt-opensource
+git checkout dev
 git fetch origin
-git pull origin dev           # fetch + merge dev into local
-
-# Add to .gitignore before staging
-echo "resource-utilization/dbt/models/staging/sources.yml.backup" >> .gitignore
-echo "resource-utilization/*.html" >> .gitignore
-echo "*.code-workspace" >> .gitignore
-
-# Stage
-git add resource-utilization/airflow/dags/pipeline_daily.py
-git add resource-utilization/dbt/models/
-git add resource-utilization/dbt/seeds/
-git add resource-utilization/dbt/snapshots/
-git add resource-utilization/dbt/dbt_project.yml
-git add .gitignore
-
-# Review — confirm no profiles.yml, no .code-workspace, no backup files
-git status
-
-git commit -m "add dbt models, DAG, seeds, snapshots"
-git push origin main
+git pull origin dev
 ```
 
-**Never commit:** `dbt/profiles.yml` (passwords), `*.code-workspace` (machine-specific), `*.html` files in resource-utilization/.
+Create a feature branch for your task:
+
+```bash
+git checkout -b feature/my-task
+```
+
+Make changes, commit by concern — not everything at once:
+
+```bash
+# Stage specific files
+git add airflow/dags/pipeline_daily.py
+git commit -m "feat: add pipeline_daily DAG"
+
+git add dbt/dbt_project.yml
+git commit -m "feat: add package schemas to dbt_project.yml"
+
+# Review before pushing — confirm no profiles.yml or secrets
+git status
+```
+
+Push your branch and open a PR to dev:
+
+```bash
+git push origin feature/my-task
+gh pr create --base dev --title "feat: my task description"
+```
+
+**Never commit:** `dbt/profiles.yml` (passwords), `*.code-workspace` (machine-specific), `dbt/target/`, `dbt/dbt_packages/`.
+
+**Never push directly to `dev` or `main`** — always use a PR.
 
 ---
 
@@ -86,7 +111,7 @@ git push origin main
 
 ```bash
 # Create dev branch if it doesn't exist
-cd ~/Documents/btg-case-studies
+cd ~/Documents/btg-case-studies-with-dbt/single-dbt-opensource
 git checkout main && git pull
 git checkout -b dev
 git push origin dev
@@ -107,7 +132,7 @@ gh auth status
 # Must show: Logged in to github.com — scopes must include repo and workflow
 
 # Get registration token (expires in 1 hour)
-gh api --method POST repos/YOUR-USERNAME/btg-case-studies/actions/runners/registration-token \
+gh api --method POST repos/kanjasaha/btg-case-studies-with-dbt/actions/runners/registration-token \
   --jq .token
 
 # Create runner folder and download
@@ -119,7 +144,7 @@ curl -o actions-runner-osx-arm64.tar.gz -L \
 tar xzf ./actions-runner-osx-arm64.tar.gz
 
 # Configure — replace TOKEN with token from above
-./config.sh --url https://github.com/YOUR-USERNAME/btg-case-studies --token TOKEN
+./config.sh --url https://github.com/kanjasaha/btg-case-studies-with-dbt --token TOKEN
 # Press Enter for all three prompts (accept defaults)
 # Must show: Runner successfully added + Runner connection is good
 ```
@@ -134,33 +159,33 @@ cd ~/actions-runner
 
 **Verify:** GitHub → Settings → Actions → Runners — Mac appears with green dot, status Idle.
 
-Commit CI-safe `profiles.yml`:
-
-```bash
-cd ~/Documents/btg-case-studies
-
-# Force-add (overrides .gitignore)
-git add -f resource-utilization/dbt/profiles.yml
-git status resource-utilization/dbt/profiles.yml
-# Must show: new file: resource-utilization/dbt/profiles.yml
-
-git commit -m "add CI-safe profiles.yml for GitHub Actions"
-git push origin feature/test-ci
-```
-
-CI-safe `profiles.yml` uses `env_var()` references — no hardcoded passwords.
-
 ---
 
 ## Step 1 — GitHub Actions and branch protection
 
 ```bash
-cd ~/Documents/btg-case-studies
+cd ~/Documents/btg-case-studies-with-dbt/single-dbt-opensource
 mkdir -p .github/workflows
 touch .github/workflows/.gitkeep
 
+# Enable branch protection on dev
+gh api repos/kanjasaha/btg-case-studies-with-dbt/branches/dev/protection \
+  --method PUT \
+  --header "Content-Type: application/json" \
+  --input - <<'EOF'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["dbt CI — build modified models and run tests"]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": null,
+  "restrictions": null
+}
+EOF
+
 # Enable branch protection on main
-gh api repos/YOUR-USERNAME/btg-case-studies/branches/main/protection \
+gh api repos/kanjasaha/btg-case-studies-with-dbt/branches/main/protection \
   --method PUT \
   --header "Content-Type: application/json" \
   --input - <<'EOF'
@@ -183,11 +208,11 @@ Use `--input -` with heredoc, not `--field` — the branch protection API requir
 ## Step 2 — Add GitHub Secrets
 
 ```bash
-gh secret set DBT_HOST     --body "localhost"                  --repo YOUR-USERNAME/btg-case-studies
-gh secret set DBT_PORT     --body "5432"                       --repo YOUR-USERNAME/btg-case-studies
-gh secret set DBT_USER     --body "mds_user"                   --repo YOUR-USERNAME/btg-case-studies
-gh secret set DBT_PASSWORD --body "mds_password"               --repo YOUR-USERNAME/btg-case-studies
-gh secret set DBT_DBNAME   --body "btg_resource_utilization"   --repo YOUR-USERNAME/btg-case-studies
+gh secret set DBT_HOST     --body "localhost"                --repo kanjasaha/btg-case-studies-with-dbt
+gh secret set DBT_PORT     --body "5432"                     --repo kanjasaha/btg-case-studies-with-dbt
+gh secret set DBT_USER     --body "mds_user"                 --repo kanjasaha/btg-case-studies-with-dbt
+gh secret set DBT_PASSWORD --body "mds_password"             --repo kanjasaha/btg-case-studies-with-dbt
+gh secret set DBT_DBNAME   --body "btg_resource_utilization" --repo kanjasaha/btg-case-studies-with-dbt
 ```
 
 `DBT_HOST=localhost` works because the self-hosted runner is a process on your Mac — localhost hits Docker PostgreSQL directly.
@@ -207,11 +232,11 @@ on:
   pull_request:
     branches: [dev, main]
     paths:
-      - 'resource-utilization/dbt/models/**'
-      - 'resource-utilization/dbt/tests/**'
-      - 'resource-utilization/dbt/macros/**'
-      - 'resource-utilization/dbt/seeds/**'
-      - 'resource-utilization/dbt/snapshots/**'
+      - 'dbt/models/**'
+      - 'dbt/tests/**'
+      - 'dbt/macros/**'
+      - 'dbt/seeds/**'
+      - 'dbt/snapshots/**'
 
 env:
   DBT_HOST:     ${{ secrets.DBT_HOST }}
@@ -230,7 +255,7 @@ jobs:
 
       - name: Install dbt packages
         run: |
-          docker compose -f resource-utilization/docker-compose.yml \
+          docker compose -f docker-compose.yml \
             run --rm airflow-scheduler bash -c \
             "cd /opt/airflow/dbt && /usr/local/airflow/dbt_venv/bin/dbt deps"
 
@@ -246,7 +271,7 @@ jobs:
         run: |
           if [ -f "prod-state/manifest.json" ]; then
             echo "Prod manifest found — running Slim CI"
-            docker compose -f resource-utilization/docker-compose.yml \
+            docker compose -f docker-compose.yml \
               run --rm airflow-scheduler bash -c \
               "cd /opt/airflow/dbt && /usr/local/airflow/dbt_venv/bin/dbt build \
               --select state:modified+ \
@@ -256,7 +281,7 @@ jobs:
               --profiles-dir ."
           else
             echo "No prod manifest — running full build"
-            docker compose -f resource-utilization/docker-compose.yml \
+            docker compose -f docker-compose.yml \
               run --rm airflow-scheduler bash -c \
               "cd /opt/airflow/dbt && /usr/local/airflow/dbt_venv/bin/dbt build \
               --target ci \
@@ -268,7 +293,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dbt-manifest
-          path: resource-utilization/dbt/target/manifest.json
+          path: dbt/target/manifest.json
           retention-days: 7
 ```
 
@@ -279,6 +304,8 @@ Use `docker compose run` not plain `dbt` — the runner shell does not load `~/.
 ---
 
 ## Step 4 — Production workflow
+
+On merge to main — GitHub Actions triggers Airflow `pipeline_daily` DAG which runs `dbt build --target prod`. GitHub Actions does NOT run dbt directly against prod.
 
 ```bash
 code .github/workflows/dbt_prod.yml
@@ -292,53 +319,40 @@ on:
     branches: [main]
   workflow_dispatch:
 
-env:
-  DBT_HOST:     ${{ secrets.DBT_HOST }}
-  DBT_PORT:     ${{ secrets.DBT_PORT }}
-  DBT_USER:     ${{ secrets.DBT_USER }}
-  DBT_PASSWORD: ${{ secrets.DBT_PASSWORD }}
-  DBT_DBNAME:   ${{ secrets.DBT_DBNAME }}
-
 jobs:
-  dbt-prod:
-    name: dbt Production — full build and test
+  trigger-airflow:
+    name: dbt Production — trigger Airflow pipeline_daily
     runs-on: self-hosted
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install dbt packages
+      - name: Trigger pipeline_daily DAG
         run: |
-          docker compose -f resource-utilization/docker-compose.yml \
-            run --rm airflow-scheduler bash -c \
-            "cd /opt/airflow/dbt && /usr/local/airflow/dbt_venv/bin/dbt deps"
+          docker exec btg-airflow-scheduler \
+            airflow dags trigger pipeline_daily
 
-      - name: Run full production build
+      - name: Wait for DAG completion
         run: |
-          docker compose -f resource-utilization/docker-compose.yml \
-            run --rm airflow-scheduler bash -c \
-            "cd /opt/airflow/dbt && /usr/local/airflow/dbt_venv/bin/dbt build \
-            --target prod \
-            --profiles-dir ."
+          sleep 30
+          docker exec btg-airflow-scheduler \
+            airflow dags list-runs --dag-id pipeline_daily --limit 1
 
       - name: Save production manifest
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: dbt-manifest
-          path: resource-utilization/dbt/target/manifest.json
+          path: dbt/target/manifest.json
           retention-days: 7
 ```
 
-The prod workflow saves `manifest.json` after each successful run. CI downloads it on the next PR to enable Slim CI.
-
-Commit and push:
+Commit and push via feature branch:
 
 ```bash
-cd ~/Documents/btg-case-studies
+cd ~/Documents/btg-case-studies-with-dbt/single-dbt-opensource
+git checkout -b feature/add-github-actions
 git add .github/
 git commit -m "add CI and production GitHub Actions workflows"
-git push origin dev
+git push origin feature/add-github-actions
+gh pr create --base dev --title "feat: add GitHub Actions CI/CD workflows"
 ```
 
 ---
@@ -351,7 +365,7 @@ Developer pushes to feature branch
 → Model fails → CI status = ERROR or FAIL → PR merge button locked
 → Developer fixes code, pushes again → CI re-runs automatically
 → CI passes → PR approved → merge to dev
-→ CD triggers on merge to main → dbt build --target prod
+→ CD triggers on merge to main → Airflow pipeline_daily triggers
 → Prod manifest saved → available for next CI cycle
 ```
 
@@ -371,67 +385,6 @@ dbt build --select result:fail     # retry failed tests only
 
 ---
 
-```bash
-cd ~/Documents/btg-case-studies
-git checkout dev
-git pull
-git checkout -b feature/add-revenue-tier
-
-# Make a change — add revenue_tier to customer_revenue_monthly
-code resource-utilization/dbt/models/marts/revenue/customer_revenue_monthly.sql
-
-git add resource-utilization/dbt/
-git commit -m "add revenue_tier classification to customer_revenue_monthly"
-git push origin feature/add-revenue-tier
-```
-
----
-
-## Step 6 — Open a Pull Request
-
-```bash
-gh pr create \
-  --base dev \
-  --title "Add revenue_tier to customer_revenue_monthly" \
-  --body "Adds Platinum/Gold/Silver/Bronze tier classification based on monthly net revenue."
-```
-
----
-
-## Step 7 — Watch CI run
-
-```bash
-# Watch from terminal
-gh run watch
-
-# Or check status
-gh run list --limit 5
-```
-
-CI runs `state:modified+` — only `customer_revenue_monthly` and its downstream dependents rebuild. If any test fails, the PR merge button stays locked.
-
----
-
-## Step 8 — Merge to dev then main
-
-```bash
-# After CI passes and review approved
-gh pr merge --squash
-
-# Open PR from dev to main for release
-git checkout dev && git pull
-gh pr create \
-  --base main \
-  --title "Release: add revenue_tier" \
-  --body "Merging dev to main — triggers prod deployment."
-
-# After CI passes on the dev→main PR
-gh pr merge --squash
-# prod workflow triggers automatically — dbt build --target prod runs
-```
-
----
-
 ## Cleanup workflow — drop CI schemas after PR closes
 
 ```bash
@@ -444,7 +397,7 @@ on:
   pull_request:
     types: [closed]
     paths:
-      - 'resource-utilization/dbt/models/**'
+      - 'dbt/models/**'
 
 jobs:
   cleanup:
@@ -452,11 +405,13 @@ jobs:
     steps:
       - name: Drop CI schemas
         run: |
-          docker compose -f resource-utilization/docker-compose.yml \
+          docker compose -f docker-compose.yml \
             run --rm airflow-scheduler bash -c "
             psql -h postgres -U \$DBT_USER -d \$DBT_DBNAME -c '
             DROP SCHEMA IF EXISTS ci_staging_silver CASCADE;
             DROP SCHEMA IF EXISTS ci_mart_gold CASCADE;
+            DROP SCHEMA IF EXISTS ci_seeds CASCADE;
+            DROP SCHEMA IF EXISTS ci_snapshots CASCADE;
             '"
         env:
           DBT_USER:   ${{ secrets.DBT_USER }}
@@ -472,10 +427,10 @@ Always use `DROP SCHEMA IF EXISTS` — if CI failed before creating schemas, a p
 **`dbt: command not found` in CI:**
 The runner shell does not load `~/.zshrc`. Use `docker compose run` with the full binary path `/usr/local/airflow/dbt_venv/bin/dbt`.
 
-**`Could not find profile named 'resource_utilization'`:**
-The CI-safe `profiles.yml` was not committed. Run:
+**`Could not find profile named 'resource_utilization_postgres'`:**
+The `dbt/profiles.yml` was not committed or gitignored. Force-add it:
 ```bash
-git add -f resource-utilization/dbt/profiles.yml
+git add -f dbt/profiles.yml
 git commit -m "add CI-safe profiles.yml"
 git push
 ```
@@ -496,4 +451,4 @@ This is correct — open a PR from dev to main instead of pushing directly.
 ---
 
 ## Next
-Continue to **Runbook 4 — Airflow** if not already completed, or you are done.
+Runbook 5 complete — CI/CD pipeline is live. You are done.
