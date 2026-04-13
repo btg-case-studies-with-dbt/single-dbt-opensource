@@ -2,7 +2,6 @@
 
 {{
     config(
-      target_schema='snapshots',
       unique_key='account_id',
       strategy='timestamp',
       updated_at='date_updated',

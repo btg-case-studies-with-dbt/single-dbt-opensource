@@ -1,7 +1,6 @@
 {% snapshot model_availability_snapshot %}
 {{
     config(
-        target_schema='snapshots',
         unique_key=['model_variant', 'source_region'],
         strategy='check',
         check_cols=['is_active'],
