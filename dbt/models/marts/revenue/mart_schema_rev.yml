@@ -499,6 +499,10 @@ models:
           - name: revenue_tier
             description: "Revenue tier classification — Platinum, Gold, Silver, Bronze."
             data_type: varchar
+          - name: revenue_rank
+            description: "Revenue rank for each customer"
+            data_type: integer
+         
             # v2-only column — not present in v1
 
     columns:
