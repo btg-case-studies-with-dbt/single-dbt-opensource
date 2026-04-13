@@ -457,6 +457,7 @@ models:
     tags: ['revenue', 'customer', 'monthly', 'mart', 'incremental']
 
     latest_version: 2
+    
     # latest_version: 2 — uncomment when v2 (with revenue_tier) is ready
     # ref('customer_revenue_monthly') resolves to this version
 
@@ -482,11 +483,16 @@ models:
     versions:
       - v: 1
         deprecation_date: "2026-06-01"
+        defined_in: customer_revenue_monthly_v1
+        
         # After this date dbt emits a compile-time warning for any model
         # still using ref('customer_revenue_monthly', v=1).
         # The run continues — deprecation_date is a warning, not a hard stop.
         # no defined_in — dbt finds customer_revenue_monthly_v1.sql by convention
       - v: 2
+        defined_in: customer_revenue_monthly
+        config:
+          alias: customer_revenue_monthly
         # no defined_in — dbt finds customer_revenue_monthly_v2.sql by convention
         columns:
           - include: all        # inherit all columns, data_types and tests from shared columns: block
