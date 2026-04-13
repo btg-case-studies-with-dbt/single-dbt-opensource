@@ -26,35 +26,44 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
-# Seed configuration
-seeds:
-  resource_utilization:
-    +schema: seeds
-    +post-hook:
-      - "GRANT SELECT ON {{ this }} TO analytics_engineer"
-      - "GRANT SELECT ON {{ this }} TO data_scientist"
+
 
 # Model configuration
 models:
   resource_utilization:
-
     staging:
       +schema: staging_silver
       +materialized: view
       +post-hook:
-        - "GRANT SELECT ON {{ this }} TO analytics_engineer"
+        - "GRANT ALL ON {{ this }} TO analytics_engineer"
         - "GRANT SELECT ON {{ this }} TO data_scientist"
-
     intermediate:
       +schema: staging_silver
       +materialized: incremental
       +post-hook:
-        - "GRANT SELECT ON {{ this }} TO analytics_engineer"
+        - "GRANT ALL ON {{ this }} TO analytics_engineer"
         - "GRANT SELECT ON {{ this }} TO data_scientist"
-
     marts:
       +schema: mart_gold
       +materialized: table
       +post-hook:
-        - "GRANT SELECT ON {{ this }} TO analytics_engineer"
+        - "GRANT ALL ON {{ this }} TO analytics_engineer"
         - "GRANT SELECT ON {{ this }} TO business_user"
+  elementary:
+    +schema: elementary
+  dbt_project_evaluator:
+    +schema: dbt_project_evaluator
+
+seeds:
+  resource_utilization:
+    +schema: seeds
+    +post-hook:
+      - "GRANT ALL ON {{ this }} TO analytics_engineer"
+      - "GRANT SELECT ON {{ this }} TO data_scientist"
+
+snapshots:
+  resource_utilization:
+    +target_schema: snapshots
+    +post-hook:
+      - "GRANT ALL ON {{ this }} TO analytics_engineer"
+      - "GRANT SELECT ON {{ this }} TO data_scientist"
