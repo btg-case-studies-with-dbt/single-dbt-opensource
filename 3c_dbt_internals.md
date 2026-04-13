@@ -1,41 +1,14 @@
-# 3c — dbt Internals & Exam Prep
+# 3c — dbt Internals
 
 ## Before you start
 - Completed Runbooks 3a and 3b
-- Not required for daily development — covers internals and exam preparation
+- Full pipeline running in personal schema, prod build clean
 
 ---
 
-## Section 1 — dbt Internals
+## Section 1 — Ephemeral Models
 
-### Dry run & Jinja resolution
-
-A dry run executes the dbt parse phase without running any SQL. It validates all Jinja, `ref()`, and `source()` calls are valid and the DAG can be constructed.
-
-```python
-# .render() forces full Jinja resolution
-compiled_node = context.compile_node(node)
-rendered_sql = compiled_node.compiled_code.render()
-
-# Ensures:
-# — All ref() calls resolve to actual relation names
-# — All source() calls validated against sources.yml
-# — Full DAG built with correct dependencies
-# — Jinja errors surface without touching the database
-```
-
-Simply running models sequentially does not force Jinja resolution — you must call `.render()` explicitly.
-
-```bash
-# Compile only — no database writes
-cd ~/Documents/btg-case-studies-with-dbt/single-dbt-opensource/dbt
-dbt compile --select stg_customer_details
-
-# View compiled SQL
-code target/compiled/resource_utilization/models/staging/stg_customer_details.sql
-```
-
-### Ephemeral models — CTEs that don't touch the database
+Both `stg_token_usage_proprietary` and `stg_token_usage_open_source` repeat the same filter logic — `where total_tokens > 0` and the same field casting. An ephemeral model eliminates that duplication.
 
 ```sql
 -- models/staging/base_token_usage.sql
@@ -45,150 +18,328 @@ select
     request_id,
     account_id,
     model_variant,
-    total_tokens
+    source_region,
+    input_tokens,
+    output_tokens,
+    cache_read_tokens,
+    cache_write_tokens,
+    total_tokens,
+    loaded_at
 from {{ source('raw_bronze', 'inference_user_token_usage_proprietary') }}
 where total_tokens > 0
 ```
 
-What dbt actually sends to PostgreSQL when another model refs it:
+dbt inlines this as a CTE when any model refs it — no table or view is created:
 
 ```sql
+-- what dbt actually sends to PostgreSQL
 with base_token_usage as (
-    select request_id, account_id, model_variant, total_tokens
+    select request_id, account_id, ...
     from raw_bronze.inference_user_token_usage_proprietary
     where total_tokens > 0
 )
 select * from base_token_usage
 ```
 
-| Use ephemeral when | Do NOT use ephemeral when |
+**When to use ephemeral:**
+
+| Use ephemeral | Do NOT use ephemeral |
 |---|---|
-| Logic shared across 2-3 models | More than 3-4 models reference it |
-| Simple transformation — filter, rename | Logic is expensive — runs again for every model |
+| Logic shared across 2-3 models | More than 3-4 models reference it — runs again for each |
+| Simple filter or rename | Logic is expensive — window functions, large joins |
 | Hide internal details from schema | You need to test the model directly |
 
-Ephemeral models cannot be tested directly — no relation exists to test against.
+Ephemeral models cannot be tested directly — no relation exists. Move tests to the downstream model that refs it. Ephemeral + `access: public` raises a parse error.
 
-Ephemeral + `access: public` is invalid — raises a parsing error:
-```
-ParseError: Model 'my_model' is ephemeral and cannot have access: public.
-```
+---
 
-### dbt artifacts
+## Section 2 — Source Freshness
 
-| File | What it contains | When written |
-|---|---|---|
-| `manifest.json` | Full project graph — every node, config, SQL, dependencies | Every compile, run, build, test |
-| `run_results.json` | Execution metadata — status, timing, rows affected | After every run, build, test |
-| `catalog.json` | Database metadata — column names, types, row counts | Only on `dbt docs generate` |
-| `sources.json` | Source freshness check results | Only on `dbt source freshness` |
-
-Join key between `manifest.json` and `run_results.json`: **`unique_id`**
-Format: `model.project_name.model_name`
-Example: `model.resource_utilization.stg_customer_details`
-
-### Materialization precedence — most specific wins
-
-| Level | Where | Precedence |
-|---|---|---|
-| `config()` in model SQL file | Inside the `.sql` file | 1 — highest, always wins |
-| `config:` in `schema.yml` | Model-level YAML | 2 |
-| Folder-level in `dbt_project.yml` | Under `models:` section | 3 |
-| Project-level in `dbt_project.yml` | Under project name | 4 |
-| Package default | Package's own `dbt_project.yml` | 5 |
-| dbt built-in default | dbt core | 6 — lowest |
-
-Same precedence applies to all configs — schema, database, tags, grants, on_schema_change.
-
-### Schema naming — generate_schema_name
-
-```bash
-# Default: {target.schema}_{custom_schema}
-# personal target: schema = dbt_kanja, custom_schema = staging_silver
-# result: dbt_kanja_staging_silver
-
-# prod target: schema = prod
-# result: prod_staging_silver
-```
-
-Override in `dbt/macros/generate_schema_name.sql`:
-
-```sql
-{%- macro generate_schema_name(custom_schema_name, node) -%}
-    {%- set default_schema = target.schema -%}
-    {%- if custom_schema_name is none -%}
-        {{ default_schema }}
-    {%- elif target.name == 'prod' -%}
-        {{ custom_schema_name | trim }}
-    {%- else -%}
-        {{ default_schema }}_{{ custom_schema_name | trim }}
-    {%- endif -%}
-{%- endmacro -%}
-```
-
-### CASE WHEN vs Jinja if — the precise distinction
-
-| | CASE WHEN | `{% if %}` |
-|---|---|---|
-| Runs | In the database, row by row | At compile time on your machine |
-| Use when | Decision depends on column values | Decision depends on `target.name`, `is_incremental()`, macro args |
-| Access to row data | Yes | No |
-
-### Debug flags and log levels
+`revenue_account_daily` drives all revenue marts. If it stops loading, marts silently go stale. Run source freshness before building marts in prod:
 
 ```bash
 cd ~/Documents/btg-case-studies-with-dbt/single-dbt-opensource/dbt
 
-# Debug output — shows compiled SQL and full error traces
-dbt run --select stg_customer_details --log-level debug
-dbt --debug run --select stg_customer_details
+# Check all sources
+dbt source freshness
 
-# Quiet — only warnings and errors
-dbt run --log-level warn
-
-# JSON format for log aggregation
-dbt run --log-format json
-
-# Check the log file — always written at debug level regardless of --log-level
-cat logs/dbt.log | tail -50
-
-# Find compiled SQL for a failing model
-cat target/compiled/resource_utilization/models/staging/stg_customer_details.sql
-
-# Find run result for a specific model
-cat target/run_results.json | python3 -m json.tool | grep -A 10 "stg_customer_details"
+# Check only revenue sources
+dbt source freshness --select source:raw_bronze.revenue_account_daily
 ```
 
-Three-step debugging workflow:
-1. Read the terminal error — compilation error or database error?
-2. Find the compiled SQL in `target/compiled/` — paste into pgAdmin and run directly
-3. If still unclear — run with `--debug` for full connection trace
+Freshness thresholds are already defined in `sources.yml`:
+
+```yaml
+- name: revenue_account_daily
+  freshness:
+    warn_after:  {count: 25, period: hour}
+    error_after: {count: 49, period: hour}
+  loaded_at_field: loaded_at
+```
+
+Results write to `target/sources.json`. Config tables (`config_model_dimensions`, `config_model_region_availability`) have `freshness: null` — manually loaded, no freshness check.
+
+Add to prod run sequence before `dbt build`:
+
+```bash
+dbt source freshness && dbt build --target prod
+```
+
+> **Automating freshness checks:** In production, run `dbt source freshness` as a separate Airflow task before `dbt build` — if any source errors, the build task never starts and the DAG fails immediately. This prevents stale data from reaching the marts silently. Full implementation covered in Runbook 4.
 
 ---
 
-## Section 2 — Jinja Reference
+## Section 3 — dbt Artifacts
 
-### Variables
+Every dbt command writes artifacts to `target/`. These are JSON files — queryable, diffable, and used by dbt itself for state comparison.
+
+| File | What it contains | Written by |
+|---|---|---|
+| `manifest.json` | Full project graph — every node, config, compiled SQL, dependencies | Every compile, run, build, test |
+| `run_results.json` | Execution metadata — status, timing, rows affected | After every run, build, test |
+| `catalog.json` | Database metadata — column names, types, row counts | Only `dbt docs generate` |
+| `sources.json` | Source freshness check results | Only `dbt source freshness` |
+
+Join key between `manifest.json` and `run_results.json`: **`unique_id`**
+Format: `model.project_name.model_name`
+Example: `model.resource_utilization.int_revenue_daily`
+
+**Find the slowest models after a prod build:**
+
+```bash
+cd ~/Documents/btg-case-studies-with-dbt/single-dbt-opensource/dbt
+cat target/run_results.json | python3 -c "
+import json, sys
+results = json.load(sys.stdin)['results']
+sorted_results = sorted(results, key=lambda x: x.get('execution_time', 0), reverse=True)
+for r in sorted_results[:10]:
+    print(f\"{r['execution_time']:.2f}s  {r['unique_id']}\")
+"
+```
+
+**Verify column types after a build — `catalog.json`:**
+
+```bash
+dbt docs generate
+cat target/catalog.json | python3 -c "
+import json, sys
+catalog = json.load(sys.stdin)
+node = catalog['nodes'].get('model.resource_utilization.int_revenue_daily', {})
+for col, meta in node.get('columns', {}).items():
+    print(f\"{col}: {meta['type']}\")
+"
+```
+
+`catalog.json` is only generated by `dbt docs generate` — not available in CI runs without explicitly running it.
+
+---
+
+## Section 4 — Materialization Precedence
+
+Config set in the SQL file always wins. Most specific wins:
+
+| Level | Where | Precedence |
+|---|---|---|
+| `config()` in SQL file | Inside `.sql` file | 1 — highest |
+| `config:` in `schema.yml` | Model-level YAML | 2 |
+| Folder-level in `dbt_project.yml` | Under `models:` section | 3 |
+| Project-level in `dbt_project.yml` | Under project name | 4 |
+| dbt built-in default | dbt core | 5 — lowest |
+
+**Why this matters for `int_revenue_daily`:**
+
+The SQL file sets `on_schema_change='append_new_columns'` — this always wins over anything set in `schema.yml` or `dbt_project.yml`. When contract enforcement was added to `schema.yml`, it conflicted with `on_schema_change: ignore` set at folder level in `dbt_project.yml`. The SQL file config took precedence and resolved it.
+
+Same rule applies to all configs — `schema`, `database`, `tags`, `grants`, `on_schema_change`.
+
+---
+
+## Section 5 — CASE WHEN vs Jinja if
+
+Both look like conditional logic but run at completely different times.
+
+| | CASE WHEN | `{% if %}` |
+|---|---|---|
+| Runs | In the database, row by row | At compile time on your machine |
+| Access to row data | Yes | No |
+| Use when | Decision depends on column values | Decision depends on `target.name`, `is_incremental()`, vars |
+
+**CASE WHEN — row-level logic in `customer_revenue_monthly`:**
+
+```sql
+-- runs in PostgreSQL, once per row
+case
+    when total_net_revenue >= 10000 then 'Platinum'
+    when total_net_revenue >= 5000  then 'Gold'
+    when total_net_revenue >= 1000  then 'Silver'
+    else 'Bronze'
+end as revenue_tier
+```
+
+**Jinja if — compile-time logic in `int_revenue_daily`:**
+
+```sql
+-- evaluated on your machine before SQL is sent to PostgreSQL
+{% if is_incremental() %}
+where revenue_date >= (select max(revenue_date) from {{ this }}) - interval '7 days'
+{% endif %}
+```
+
+You cannot use `{% if %}` to branch on column values — dbt has no access to row data at compile time. You cannot use `CASE WHEN` to branch on `target.name` — the database has no concept of dbt targets.
+
+---
+
+## Section 6 — Jinja in Your Project
+
+### `this` — reference the current model's table
+
+Used in `int_revenue_daily` for the incremental filter:
+
+```sql
+{% if is_incremental() %}
+where revenue_date >= (
+    select max(revenue_date) from {{ this }}
+) - interval '7 days'
+{% endif %}
+```
+
+`{{ this }}` resolves to the fully qualified table name:
+- personal: `btg_resource_utilization.dbt_kanja_staging_silver.int_revenue_daily`
+- prod: `btg_resource_utilization.staging_silver.int_revenue_daily`
+
+`this.schema` and `this.name` are also available:
+
+```sql
+{{ log("Building " ~ this.name ~ " in schema " ~ this.schema, info=true) }}
+```
+
+### `var()` — project variables
+
+Variables defined in `dbt_project.yml`:
+
+```yaml
+# dbt_project.yml
+vars:
+  documentation_coverage_target: 0.8
+  date_spine_start: '2024-01-01'
+```
+
+Used in models or tests:
+
+```sql
+where revenue_date >= '{{ var("date_spine_start") }}'
+```
+
+Override at runtime without changing the file:
+
+```bash
+dbt build --vars '{"date_spine_start": "2025-01-01"}'
+```
+
+### `env_var()` — environment variables
+
+`DBT_SCHEMA` is already loaded in your shell via `~/.zshrc`. Inside `profiles.yml`:
+
+```yaml
+# profiles.yml
+schema: "{{ env_var('DBT_SCHEMA') }}"
+```
+
+Inside a macro — guard with a default so it doesn't fail locally:
+
+```sql
+{% set schema = env_var('DBT_SCHEMA', 'dbt_dev') %}
+```
+
+`env_var()` is case-sensitive and must match exactly — `DBT_SCHEMA` is not the same as `dbt_schema`.
+
+### `run_query()` — execute SQL at compile time
+
+Dynamically pull distinct model variants from `config_model_dimensions` instead of hardcoding:
+
+```sql
+{% if execute %}
+  {% set model_variants_query %}
+    select distinct model_variant
+    from {{ source('raw_bronze', 'config_model_dimensions') }}
+    order by 1
+  {% endset %}
+
+  {% set model_variants = run_query(model_variants_query).columns[0].values() %}
+{% endif %}
+
+select
+    account_id,
+    {% for variant in model_variants %}
+    sum(case when model_variant = '{{ variant }}' then net_revenue end)
+        as revenue_{{ variant | replace('-', '_') | replace('.', '_') }}
+    {{ "," if not loop.last }}
+    {% endfor %}
+from {{ ref('int_revenue_daily') }}
+group by account_id
+```
+
+`{% if execute %}` is mandatory — without it, `run_query()` fires during parse when no DB connection exists and errors.
+
+### `log()` — print to dbt logs during compile
+
+Useful for debugging macros — confirm what values are being passed:
+
+```sql
+-- in add_prior_period_metrics macro
+{{ log("Building prior period for metrics: " ~ metrics, info=true) }}
+{{ log("Partition cols: " ~ partition_cols, info=true) }}
+```
+
+Output appears in terminal during `dbt run` or `dbt compile`. Without `info=true` it only writes to `logs/dbt.log`.
+
+### `exceptions.raise_compiler_error()` — fail with a clear message
+
+Guard macros against invalid inputs:
+
+```sql
+{% macro add_prior_period_metrics(metrics, partition_cols, date_col, period_type='day') %}
+  {% if metrics | length == 0 %}
+    {{ exceptions.raise_compiler_error("add_prior_period_metrics: metrics list cannot be empty") }}
+  {% endif %}
+{% endmacro %}
+```
+
+Produces a clear compile-time error instead of a cryptic SQL syntax error downstream.
+
+---
+
+## Section 7 — Jinja Reference
+
+### Variables and output
 
 ```jinja
 {% set x = value %}          {# assign #}
 {{ variable }}               {# output #}
-{# comment #}                {# stripped at compile time #}
+{# comment #}                {# stripped at compile time — never reaches database #}
 ```
 
 ### Control flow
 
 ```jinja
 {% if target.name == 'prod' %}
-    WHERE date >= '2020-01-01'
-{% elif target.name == 'dev' %}
-    WHERE date >= CURRENT_DATE - 30
+    where revenue_date >= '2020-01-01'
+{% elif target.name == 'personal' %}
+    where revenue_date >= current_date - interval '30 days'
 {% else %}
-    WHERE date >= CURRENT_DATE - 7
+    where revenue_date >= current_date - interval '7 days'
 {% endif %}
+```
 
-{% for col in ['a', 'b', 'c'] %}
-    sum({{ col }}) as total_{{ col }}{{ "," if not loop.last }}
+### Loop — generating column lists
+
+```jinja
+{% set metrics = ['total_gross_revenue', 'total_net_revenue', 'active_days'] %}
+{% for metric in metrics %}
+    lag({{ metric }}) over (
+        partition by account_id order by month_start_date
+    ) as prior_month_{{ metric }}
+    {{ "," if not loop.last }}
 {% endfor %}
 ```
 
@@ -203,123 +354,76 @@ Three-step debugging workflow:
 
 ### Filters
 
-| Filter | What it does | Example |
+| Filter | Example | Result |
 |---|---|---|
-| `\| upper` | Uppercase | `{{ 'prod' \| upper }}` → PROD |
-| `\| lower` | Lowercase | `{{ target.name \| lower }}` |
-| `\| join(', ')` | Join list to string | `{{ ['a','b'] \| join(', ') }}` → a, b |
-| `\| default('fallback')` | Fallback if undefined | `{{ var('schema') \| default('dev') }}` |
-| `\| length` | Length | `{{ cols \| length }}` |
-| `\| replace('a','b')` | Replace | `{{ schema \| replace('prod','dev') }}` |
+| `\| upper` | `{{ 'prod' \| upper }}` | `PROD` |
+| `\| lower` | `{{ target.name \| lower }}` | `personal` |
+| `\| join(', ')` | `{{ ['a','b'] \| join(', ') }}` | `a, b` |
+| `\| default('fallback')` | `{{ var('schema') \| default('dev') }}` | `dev` if unset |
+| `\| length` | `{{ metrics \| length }}` | count of items |
+| `\| replace('a','b')` | `{{ 'us-east-1' \| replace('-', '_') }}` | `us_east_1` |
 
 ---
 
-## Section 3 — dbt Functions Reference
+## Section 8 — Debugging
 
-### Model references
+### Check connection before starting a session
 
-| Function | What it does | Example |
-|---|---|---|
-| `ref('model')` | Reference a dbt model, record dependency | `FROM {{ ref('stg_customer_details') }}` |
-| `ref('model', version=2)` | Reference a specific version | `FROM {{ ref('model_revenue_monthly', version=1) }}` |
-| `source('schema', 'table')` | Reference a raw table | `FROM {{ source('raw_bronze', 'customer_details') }}` |
+```bash
+cd ~/Documents/btg-case-studies-with-dbt/single-dbt-opensource/dbt
+dbt debug
+```
 
-### Model context
+Verifies profile, target, database connection, and adapter version. Run this if `dbt compile` fails with a connection error — not just once in Runbook 2.
 
-| Variable | What it does | Example |
-|---|---|---|
-| `this` | Fully qualified name of current model | `SELECT max(loaded_at) FROM {{ this }}` |
-| `this.schema` | Schema of current model | `{{ this.schema }}` → `prod_mart_gold` |
-| `this.name` | Table name of current model | `{{ this.name }}` → `model_revenue_monthly` |
+### Read the log file after a failed run
 
-### Build context
+```bash
+# Last 50 lines — always written at debug level regardless of --log-level
+cat logs/dbt.log | tail -50
+```
 
-| Variable | What it does | Example |
-|---|---|---|
-| `is_incremental()` | True on incremental run, false on first/full-refresh | `{% if is_incremental() %}` |
-| `execute` | True when dbt is actually running (not parsing) | `{% if execute %} {% set r = run_query(...) %} {% endif %}` |
-| `target.name` | Current target name | `{% if target.name == 'prod' %}` |
-| `target.schema` | Schema prefix for current target | `{{ target.schema }}` → `dbt_kanja` |
-| `target.type` | Database adapter type | `{{ target.type }}` → `postgres` |
-| `target.threads` | Thread count | `{{ target.threads }}` |
+### JSON log format for structured analysis
 
-### Variables and environment
+```bash
+dbt build --log-format json > logs/build_output.json
+```
 
-| Function | What it does | Gotcha |
-|---|---|---|
-| `var('name')` | Reads a project variable | Fails if not set and no default |
-| `env_var('NAME')` | Reads an environment variable — exact, case-sensitive | Must match exactly — dbt does not add/strip prefixes |
-| `run_query('SQL')` | Executes SQL at compile time | Must be guarded with `{% if execute %}` |
+Each line is a valid JSON object with `level`, `msg`, `ts`, and `node_info`. Useful when piping to a log aggregator or parsing programmatically.
 
-### Documentation and debugging
+### WARN_ERROR_OPTIONS — promote warnings to errors in prod
 
-| Function | What it does | Example |
-|---|---|---|
-| `doc('block_name')` | References a description block in a `.md` file | `description: "{{ doc('model_revenue_monthly') }}"` |
-| `log('msg', info=true)` | Prints to dbt logs during compile | `{{ log("target: " ~ target.name, info=true) }}` |
-| `exceptions.raise_compiler_error('msg')` | Fails compilation with custom message | `{{ exceptions.raise_compiler_error("col required") }}` |
+Prevent deprecation warnings from accumulating silently:
+
+```yaml
+# dbt_project.yml
+config:
+  warn_error_options:
+    include:
+      - MissingArgumentsPropertyInGenericTestDeprecation
+      - PropertyMovedToConfigDeprecation
+```
+
+CLI equivalent:
+
+```bash
+dbt build --warn-error-options '{"include": ["MissingArgumentsPropertyInGenericTestDeprecation"]}'
+```
+
+Use `warn_error: true` to promote ALL warnings to errors — useful in CI to enforce clean builds.
 
 ### YAML quoting rules
 
 ```yaml
 # Must quote — contains special characters
-- name: net_revenue
-  description: "Revenue: net after discounts"         # colon requires quotes
+description: "Revenue: net after discounts"         # colon requires quotes
+description: "{{ doc('model_revenue_monthly') }}"   # Jinja requires quotes
 
-- name: model_revenue_monthly
-  description: "{{ doc('model_revenue_monthly') }}"   # curly braces require quotes
-
-# No quotes needed — plain string
-- name: account_id
-  description: Unique identifier for each customer account
+# No quotes needed
+description: Unique identifier for each customer account
 ```
 
-### WARN_ERROR_OPTIONS
-
-```yaml
-# dbt_project.yml — promote specific warnings to errors
-config:
-  warn_error_options:
-    include:
-      - DeprecatedModel
-      - DeprecatedMacro
-
-# Or promote ALL warnings to errors
-warn_error: true
-```
-
-```bash
-# CLI equivalent
-dbt build --warn-error
-dbt build --warn-error-options '{"include": ["DeprecatedModel"]}'
-```
-
----
-
-## Section 4 — Key Exam Topics
-
-| Topic | Correct answer | Common trap |
-|---|---|---|
-| Join key between `manifest.json` and `run_results.json` | `unique_id` | `relation_name`, `thread_id` |
-| Schema naming with `+schema: finance` | `{target.schema}_finance` | Just `finance` |
-| Materializations that do NOT support contracts | Ephemeral | Incremental (it does) |
-| Indirect selection mode for CI | Buildable | Eager (default — runs tests even with missing deps) |
-| Select all generic tests | `--select test_type:generic` | `test_name:generic`, `tag:generic_test` |
-| Disable one source table only | `enabled: false` on the table in `sources.yml` | `+enabled: false` at source level (disables all tables) |
-| Seed config for specific database | `+database:` scoped under `seeds: project: seed_name:` | Putting it under `models:` or at `seeds:` root |
-| Revoking a grant via grants config | Remove grantee from list — dbt issues REVOKE automatically | Writing explicit REVOKE commands |
-| `+schema: null` in tests section | Stores failures in the default profile schema | "Dynamically generated schema" |
-| Properties vs configurations | Properties = what it is (descriptions, tests). Configs = how dbt builds it. | Using them interchangeably |
-| `env_var()` with `DBT_` prefix | Must match exactly — dbt does not add/strip prefix | Thinking dbt maps `MY_VAR` to `DBT_MY_VAR` |
-| Docs block naming rules | Alphanumeric + underscore only, cannot start with digit | Using hyphens or spaces |
-| Dry run Jinja resolution | Call `.render()` on compiled node | Running models sequentially |
-| Path-based selection | `--select 'models/finance'` | `--select tag:finance` |
-| `state:modified` includes `state:new` | False — new models must be explicitly selected | Assuming `state:modified` catches new models |
-| Ephemeral + `access: public` | Raises a parsing error | Warning only, or silently downgrades |
-| `deprecation_date` alone fails the run | False — only emits a warning | Must also set `WARN_ERROR_OPTIONS` |
-| Exposures auto-generation | Via supported BI integrations only | Running `dbt build` or SQL scripts |
-| `config()` in model SQL | Highest specificity — always wins | Folder-level `dbt_project.yml` wins |
-| `dbt debug` runs models | False — tests connection and config only | Using `dbt debug` to see SQL execution |
+Always quote Jinja expressions in YAML. `doc()` not `docs()` — common typo that produces a compile error.
 
 ---
 
@@ -327,25 +431,26 @@ dbt build --warn-error-options '{"include": ["DeprecatedModel"]}'
 
 **`env_var()` fails with "is not set"**
 ```bash
-# Check exact name in shell
 env | grep DBT
 # Must match exactly — case-sensitive
-# Wrong: {{ env_var('MY_SECRET') }} when shell has DBT_MY_SECRET=abc
-# Right: {{ env_var('DBT_MY_SECRET') }}
+# DBT_SCHEMA and dbt_schema are different variables
 ```
 
 **`run_query()` fails at parse time**
+Missing `{% if execute %}` guard — fires during parse when no DB connection exists:
 ```jinja
-{# Missing {% if execute %} guard #}
 {% if execute %}
-  {% set results = run_query("SELECT DISTINCT model_variant FROM raw_bronze.config_model_dimensions") %}
+  {% set results = run_query("select distinct model_variant from ...") %}
 {% endif %}
 ```
 
-**Model contract fails with "type mismatch"**
-Fix the SQL or fix the YAML. If using `alias_types: false`, the type string must exactly match what PostgreSQL expects.
+**Compiled SQL not updating after schema change**
+```bash
+dbt compile --no-partial-parse
+# Forces full reparse — clears cached parse state
+```
 
 ---
 
 ## Next
-Continue to **Runbook 4 — Airflow** to automate the pipeline on a daily schedule.
+Continue to **3d — dbt Advanced Patterns II**.

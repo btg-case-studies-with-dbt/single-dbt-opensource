@@ -431,6 +431,22 @@ versions:
 ```
 Advantage: the file you actively work on always has the clean name. Tradeoff: `defined_in` required on latest version permanently.
 
+**Critical:** `defined_in` controls which file dbt reads — it does NOT control the table name. The default alias for any versioned model is always `<model_name>_v<n>` regardless of `defined_in`. To get a clean table name you must also set `alias` explicitly:
+
+```yaml
+versions:
+  - v: 2
+    defined_in: customer_revenue_monthly
+    config:
+      alias: customer_revenue_monthly   # without this, table is still named customer_revenue_monthly_v2
+    columns:
+      - include: all
+      - name: revenue_tier
+        data_type: varchar
+```
+
+`defined_in` and `alias` are independent — dbt does not coordinate them automatically.
+
 #### Adding v2-only columns with include
 
 ```yaml
@@ -586,6 +602,40 @@ Correct YAML structure for any generic test:
 - `config:` — how dbt executes the test (severity, limit, where)
 - Simple tests with no parameters (`not_null`, `unique`) need neither
 
+**Generating schema YAML for an existing model**
+Use `dbt-codegen` to generate a schema entry from the database — useful when a model exists but has no `schema.yml` entry yet.
+
+Add to `packages.yml`:
+```yaml
+packages:
+  - package: dbt-labs/codegen
+    version: 0.12.1
+```
+
+```bash
+dbt deps
+```
+
+Generate schema for a single model:
+```bash
+dbt run-operation generate_model_yaml --args '{"model_names": ["model_revenue_monthly"]}' > /tmp/model_revenue_monthly.yml
+```
+
+Generate schema for multiple models in one go:
+```bash
+dbt run-operation generate_model_yaml --args '{"model_names": ["model_revenue_monthly", "model_revenue_weekly", "model_revenue_ytd", "customer_revenue_weekly", "customer_revenue_ytd"]}' > /tmp/revenue_models.yml
+code /tmp/revenue_models.yml
+```
+
+Copy the output and paste into the appropriate `schema.yml`. `codegen` infers column names and data types from the database — add descriptions, tests, contracts, and group config manually after pasting.
+
+**Error message doesn't name the failing model**
+Run with debug logging — prints every step dbt takes internally including which model it was processing when the error occurred:
+```bash
+dbt compile --select model_name --no-partial-parse --log-level debug
+```
+The model name appears just before the error in the output. Useful for any cryptic parse or config error where the standard output doesn't tell you which model triggered it.
+
 **Contract enforcement fails**
 Check that all columns listed in `schema.yml` with `data_type` match exactly what the model SQL produces. Run `dbt compile --select model_name` to see the compiled SQL.
 
@@ -594,5 +644,83 @@ Use `dbt compile --select model_name` (introduced in 3a) to generate the compile
 
 ---
 
-## Next
+## Final run sequence
+
+Create `selectors.yml` in the `dbt/` folder for reusable selection logic:
+
+```yaml
+# dbt/selectors.yml
+selectors:
+  - name: personal_build
+    description: "Full build in personal schema"
+    definition:
+      method: path
+      value: models
+
+  - name: revenue_only
+    description: "All revenue mart models"
+    definition:
+      method: tag
+      value: revenue
+
+  - name: finance_group
+    description: "All models owned by finance group"
+    definition:
+      method: group
+      value: finance
+
+  - name: ci_modified
+    description: "Modified models + downstream — standard CI selector"
+    definition:
+      union:
+        - method: state
+          value: modified
+          children: true
+        - method: state
+          value: new
+
+  - name: failed_retry
+    description: "Retry errored and failed models from last run"
+    definition:
+      union:
+        - method: result
+          value: error
+          children: true
+        - method: result
+          value: fail
+          children: true
+```
+
+Usage:
+
+```bash
+dbt build --selector personal_build
+dbt build --selector revenue_only --target prod
+dbt build --selector finance_group
+dbt build --selector ci_modified --defer --state ./prod-state/
+dbt build --selector failed_retry --state ./prod-state/
+```
+
+```bash
+cd ~/Documents/btg-case-studies-with-dbt/single-dbt-opensource/dbt
+
+# 1. Validate everything parses and resolves
+dbt compile --no-partial-parse
+
+# 2. Build local
+dbt build --target personal
+
+# 3. Build prod
+dbt build --target prod
+
+# 4. Commit and push
+cd ~/Documents/btg-case-studies-with-dbt
+git add .
+git commit -m "feat: add groups, access modifiers, model versioning, singular tests"
+git push origin dev
+```
+
+---
+
+
 Continue to **3c — dbt Internals**.
