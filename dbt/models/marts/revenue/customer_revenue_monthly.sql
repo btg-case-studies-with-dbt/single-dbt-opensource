@@ -22,6 +22,7 @@ with daily_revenue as (
         account_size,
         revenue_date,
         total_gross_revenue,
+        1 as revenue_rank,
         'test' as revenue_tier, -- placeholder for v2 column
         net_revenue
 
@@ -40,7 +41,7 @@ monthly as (
         company_name,
         segment,
         vertical,
-        account_size,revenue_tier,
+        account_size,revenue_tier,revenue_rank,
         date_trunc('month', revenue_date)::date                     as month_start_date,
         (date_trunc('month', revenue_date) 
             + interval '1 month' - interval '1 day')::date          as month_end_date,
@@ -53,7 +54,7 @@ monthly as (
 
     from daily_revenue
     group by 
-        account_id, company_name, segment, vertical, account_size,revenue_tier,
+        account_id, company_name, segment, vertical, account_size,revenue_tier,revenue_rank,
         month_start_date, month_end_date
 
 ),
