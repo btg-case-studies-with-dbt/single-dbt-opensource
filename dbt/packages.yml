@@ -20,8 +20,8 @@ packages:
   - package: elementary-data/elementary
     version: [">=0.23.0", "<0.24.0"]
 
-  - git: "https://github.com/EqualExperts/dbt-unit-testing.git"
-    revision: "v0.4.20"
+  - package: EqualExperts/dbt_unit_testing
+    version: [">=0.4.20", "<0.5.0"]
 
   # --- Governance & Best Practices ---
   - package: dbt-labs/dbt_project_evaluator

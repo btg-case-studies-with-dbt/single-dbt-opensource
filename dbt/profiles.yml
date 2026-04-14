@@ -1,0 +1,22 @@
+# dbt/profiles.yml — used by Airflow inside Docker only
+resource_utilization_postgres:
+  target: prod
+  outputs:
+    prod:
+      type: postgres
+      host: postgres
+      port: 5432
+      user: mds_user
+      password: mds_password
+      dbname: btg_resource_utilization
+      schema: prod
+      threads: 4
+    ci:
+      type: postgres
+      host: "{{ env_var('DBT_HOST') }}"
+      port: "{{ env_var('DBT_PORT') | int }}"
+      user: "{{ env_var('DBT_USER') }}"
+      password: "{{ env_var('DBT_PASSWORD') }}"
+      dbname: "{{ env_var('DBT_DBNAME') }}"
+      schema: ci
+      threads: 4
