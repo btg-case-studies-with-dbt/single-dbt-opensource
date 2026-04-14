@@ -1,0 +1,649 @@
+
+
+
+models:
+  - name: model_revenue_monthly
+    description: ""
+    group: finance
+    columns:
+      - name: model_variant
+        data_type: character varying
+        description: ""
+
+      - name: model_family
+        data_type: character varying
+        description: ""
+
+      - name: model_publisher
+        data_type: character varying
+        description: ""
+
+      - name: source_region
+        data_type: character varying
+        description: ""
+
+      - name: territory
+        data_type: character varying
+        description: ""
+
+      - name: govcloud
+        data_type: boolean
+        description: ""
+
+      - name: month_start_date
+        data_type: date
+        description: ""
+
+      - name: month_end_date
+        data_type: date
+        description: ""
+
+      - name: total_gross_revenue
+        data_type: numeric
+        description: ""
+
+      - name: total_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: unique_customers
+        data_type: bigint
+        description: ""
+
+      - name: active_days
+        data_type: bigint
+        description: ""
+
+      - name: avg_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: max_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: prior_month_gross_revenue
+        data_type: numeric
+        description: ""
+
+      - name: prior_month_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: prior_month_unique_customers
+        data_type: bigint
+        description: ""
+
+      - name: mom_gross_revenue_change
+        data_type: numeric
+        description: ""
+
+      - name: mom_net_revenue_change
+        data_type: numeric
+        description: ""
+
+      - name: mom_customer_change
+        data_type: bigint
+        description: ""
+
+      - name: mom_gross_revenue_pct_change
+        data_type: numeric
+        description: ""
+
+      - name: mom_net_revenue_pct_change
+        data_type: numeric
+        description: ""
+
+  - name: model_revenue_weekly
+    description: ""
+    group: finance
+    columns:
+      - name: model_variant
+        data_type: character varying
+        description: ""
+
+      - name: model_family
+        data_type: character varying
+        description: ""
+
+      - name: model_publisher
+        data_type: character varying
+        description: ""
+
+      - name: source_region
+        data_type: character varying
+        description: ""
+
+      - name: territory
+        data_type: character varying
+        description: ""
+
+      - name: govcloud
+        data_type: boolean
+        description: ""
+
+      - name: week_start_date
+        data_type: date
+        description: ""
+
+      - name: week_end_date
+        data_type: date
+        description: ""
+
+      - name: total_gross_revenue
+        data_type: numeric
+        description: ""
+
+      - name: total_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: unique_customers
+        data_type: bigint
+        description: ""
+
+      - name: active_days
+        data_type: bigint
+        description: ""
+
+      - name: avg_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: max_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: prior_week_gross_revenue
+        data_type: numeric
+        description: ""
+
+      - name: prior_week_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: prior_week_unique_customers
+        data_type: bigint
+        description: ""
+
+      - name: wow_gross_revenue_change
+        data_type: numeric
+        description: ""
+
+      - name: wow_net_revenue_change
+        data_type: numeric
+        description: ""
+
+      - name: wow_customer_change
+        data_type: bigint
+        description: ""
+
+      - name: wow_gross_revenue_pct_change
+        data_type: numeric
+        description: ""
+
+      - name: wow_net_revenue_pct_change
+        data_type: numeric
+        description: ""
+
+  - name: model_revenue_ytd
+    description: ""
+    group: finance
+    columns:
+      - name: model_variant
+        data_type: character varying
+        description: ""
+
+      - name: model_family
+        data_type: character varying
+        description: ""
+
+      - name: model_publisher
+        data_type: character varying
+        description: ""
+
+      - name: source_region
+        data_type: character varying
+        description: ""
+
+      - name: territory
+        data_type: character varying
+        description: ""
+
+      - name: govcloud
+        data_type: boolean
+        description: ""
+
+      - name: ytd_start_date
+        data_type: date
+        description: ""
+
+      - name: ytd_end_date
+        data_type: date
+        description: ""
+
+      - name: year
+        data_type: numeric
+        description: ""
+
+      - name: ytd_gross_revenue
+        data_type: numeric
+        description: ""
+
+      - name: ytd_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: unique_customers_ytd
+        data_type: bigint
+        description: ""
+
+      - name: active_days
+        data_type: bigint
+        description: ""
+
+      - name: avg_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: max_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: min_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: active_months
+        data_type: bigint
+        description: ""
+
+      - name: avg_monthly_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: rank_in_family
+        data_type: bigint
+        description: ""
+
+      - name: rank_in_region
+        data_type: bigint
+        description: ""
+
+      - name: rank_overall
+        data_type: bigint
+        description: ""
+
+      - name: revenue_per_customer
+        data_type: numeric
+        description: ""
+
+      - name: cumulative_revenue_pct
+        data_type: numeric
+        description: ""
+
+  - name: customer_revenue_weekly
+    description: ""
+    group: finance
+    columns:
+      - name: account_id
+        data_type: character varying
+        description: ""
+
+      - name: company_name
+        data_type: character varying
+        description: ""
+
+      - name: segment
+        data_type: character varying
+        description: ""
+
+      - name: vertical
+        data_type: character varying
+        description: ""
+
+      - name: account_size
+        data_type: character varying
+        description: ""
+
+      - name: week_start_date
+        data_type: date
+        description: ""
+
+      - name: week_end_date
+        data_type: date
+        description: ""
+
+      - name: total_gross_revenue
+        data_type: numeric
+        description: ""
+
+      - name: total_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: active_days
+        data_type: bigint
+        description: ""
+
+      - name: avg_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: max_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: min_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: prior_week_gross_revenue
+        data_type: numeric
+        description: ""
+
+      - name: prior_week_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: wow_gross_revenue_change
+        data_type: numeric
+        description: ""
+
+      - name: wow_net_revenue_change
+        data_type: numeric
+        description: ""
+
+      - name: wow_gross_revenue_pct_change
+        data_type: numeric
+        description: ""
+
+      - name: wow_net_revenue_pct_change
+        data_type: numeric
+        description: ""
+
+  - name: customer_revenue_ytd
+    description: ""
+    group: finance
+    columns:
+      - name: account_id
+        data_type: character varying
+        description: ""
+
+      - name: company_name
+        data_type: character varying
+        description: ""
+
+      - name: segment
+        data_type: character varying
+        description: ""
+
+      - name: vertical
+        data_type: character varying
+        description: ""
+
+      - name: account_size
+        data_type: character varying
+        description: ""
+
+      - name: ytd_start_date
+        data_type: date
+        description: ""
+
+      - name: ytd_end_date
+        data_type: date
+        description: ""
+
+      - name: year
+        data_type: numeric
+        description: ""
+
+      - name: ytd_gross_revenue
+        data_type: numeric
+        description: ""
+
+      - name: ytd_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: active_days
+        data_type: bigint
+        description: ""
+
+      - name: avg_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: max_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: min_daily_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: active_months
+        data_type: bigint
+        description: ""
+
+      - name: avg_monthly_net_revenue
+        data_type: numeric
+        description: ""
+
+      - name: rank_in_segment
+        data_type: bigint
+        description: ""
+
+      - name: rank_in_vertical
+        data_type: bigint
+        description: ""
+
+      - name: rank_overall
+        data_type: bigint
+        description: ""
+
+      - name: cumulative_revenue_pct
+        data_type: numeric
+        description: ""
+
+
+
+  # ---------------------------------------------------------------------------
+  # Customer revenue marts
+  # ---------------------------------------------------------------------------
+  - name: customer_revenue_monthly
+    description: "{{ doc('customer_revenue_monthly_overview') }}"
+    group: finance
+    tags: ['revenue', 'customer', 'monthly', 'mart', 'incremental']
+
+    latest_version: 2
+    
+    # latest_version: 2 — uncomment when v2 (with revenue_tier) is ready
+    # ref('customer_revenue_monthly') resolves to this version
+
+    config:
+
+      contract:
+        enforced: true
+        # Contract enforcement — dbt validates column names and data_type
+        # match exactly what the SQL produces. Fails at compile time if they
+        # don't match — prevents silent schema drift from reaching consumers.
+      access: public
+        # public — other dbt projects can ref() this model.
+        # protected (default) — same project only.
+        # private — same group only.
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [account_id, month_start_date]
+          # Composite unique key test — no two rows can share the same
+          # account_id + month_start_date combination.
+
+    versions:
+      - v: 1
+        deprecation_date: "2026-06-01"
+        defined_in: customer_revenue_monthly_v1
+        
+        # After this date dbt emits a compile-time warning for any model
+        # still using ref('customer_revenue_monthly', v=1).
+        # The run continues — deprecation_date is a warning, not a hard stop.
+        # no defined_in — dbt finds customer_revenue_monthly_v1.sql by convention
+      - v: 2
+        defined_in: customer_revenue_monthly
+        config:
+          alias: customer_revenue_monthly
+        # no defined_in — dbt finds customer_revenue_monthly_v2.sql by convention
+        columns:
+          - include: all        # inherit all columns, data_types and tests from shared columns: block
+          - name: revenue_tier
+            description: "Revenue tier classification — Platinum, Gold, Silver, Bronze."
+            data_type: varchar
+          - name: revenue_rank
+            description: "Revenue rank for each customer"
+            data_type: integer
+         
+            # v2-only column — not present in v1
+
+    columns:
+      - name: account_id
+        description: "Customer account identifier. Foreign key to stg_customer_details."
+        data_type: varchar
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customer_details')
+                field: account_id
+              config:
+                severity: warn
+                store_failures: true
+                # store_failures: true — stores failing rows in a separate
+                # schema so you can query which account_ids are orphaned.
+
+      - name: company_name
+        description: "Legal company name from CRM."
+        data_type: varchar
+
+      - name: segment
+        description: "{{ doc('segment_definition') }}"
+        data_type: varchar
+        # tests:
+        #   - not_null:
+        #       config:
+        #         severity: warn
+        #         store_failures: true
+        #         # store_failures: true — if segment is null, you have an
+        #         # orphaned account that should be assigned to a segment.
+
+      - name: vertical
+        description: "Industry vertical — Technology, Financial Services, Healthcare etc."
+        data_type: varchar
+        # tests:
+        #   - not_null:
+        #       config:
+        #         severity: warn
+        #         store_failures: true
+        #         # store_failures: true — if segment is null, you have an
+        #         # orphaned account that should be assigned to a segment.
+
+      - name: account_size
+        description: "Company size classification — Enterprise, Mid-Market, SMB, Unknown."
+        data_type: varchar
+        # tests:
+        #   - not_null:
+        #       config:
+        #         severity: warn
+        #         store_failures: true
+        #         # store_failures: true — if segment is null, you have an
+        #         # orphaned account that should be assigned to a segment.
+
+      - name: month_start_date
+        description: "First day of the calendar month. Part of the composite unique key."
+        data_type: date
+        # tests:
+        #   - not_null:
+        #       config:
+        #         severity: warn
+        #         store_failures: true
+        #         # store_failures: true — if segment is null, you have an
+        #         # orphaned account that should be assigned to a segment.
+
+      - name: month_end_date
+        description: "Last day of the calendar month."
+        data_type: date
+        # tests:
+        #   - not_null:
+        #       config:
+        #         severity: warn
+        #         store_failures: true
+        #         # store_failures: true — if segment is null, you have an
+        #         # orphaned account that should be assigned to a segment.
+
+      - name: total_gross_revenue
+        description: "Total gross revenue for the month before discounts and credits."
+        data_type: numeric
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+              config:
+                severity: error
+                store_failures: true
+                # error not warn — a mart row with zero or negative gross
+                # revenue is a data error that must block the pipeline.
+
+      - name: total_net_revenue
+        description: "{{ doc('net_revenue_definition') }}"
+        data_type: numeric
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+              config:
+                severity: error
+                store_failures: true
+
+      - name: active_days
+        description: "Number of distinct days with revenue activity in the month."
+        data_type: bigint
+        tests:
+          - not_null
+
+      - name: avg_daily_net_revenue
+        description: "Average net revenue per active day in the month."
+        data_type: numeric
+
+      - name: max_daily_net_revenue
+        description: "Highest single-day net revenue in the month."
+        data_type: numeric
+
+      - name: min_daily_net_revenue
+        description: "Lowest single-day net revenue in the month."
+        data_type: numeric
+
+      - name: prior_month_gross_revenue
+        description: "Gross revenue from the previous calendar month. NULL for a customer's first month."
+        data_type: numeric
+
+      - name: prior_month_net_revenue
+        description: "Net revenue from the previous calendar month. NULL for a customer's first month."
+        data_type: numeric
+
+      - name: mom_gross_revenue_change
+        description: "{{ doc('mom_change_definition') }} Applied to gross revenue."
+        data_type: numeric
+
+      - name: mom_net_revenue_change
+        description: "Month-over-month absolute change in net revenue. NULL for first month."
+        data_type: numeric
+
+      - name: mom_gross_revenue_pct_change
+        description: "Month-over-month percentage change in gross revenue. NULL when prior month is zero or missing."
+        data_type: numeric
+
+      - name: mom_net_revenue_pct_change
+        description: "Month-over-month percentage change in net revenue. NULL when prior month is zero or missing."
+        data_type: numeric

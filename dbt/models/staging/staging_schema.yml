@@ -1,0 +1,772 @@
+version: 2
+
+# ---------------------------------------------------------------------------
+# What is schema.yml?
+# ---------------------------------------------------------------------------
+# schema.yml documents and tests every model dbt builds. It has two jobs:
+#
+# 1. DOCUMENTATION — descriptions at model and column level. These appear
+#    in dbt docs serve as human-readable text next to each table and column.
+#
+# 2. TESTS — rules that must be true about your data. dbt runs these after
+#    every build and fails the run if any are violated.
+#
+# Test types used in this file:
+#
+#   not_null          — column must have a value. Use on every column that
+#                       should never be empty — primary keys, foreign keys,
+#                       dates, amounts.
+#
+#   unique            — no two rows can have the same value. Use on primary
+#                       keys only — account_id, request_id etc.
+#
+#   accepted_values   — column can only contain values from a fixed list.
+#                       Use on categorical columns — segment, status, type.
+#                       Catches upstream data quality issues early.
+#
+#   relationships     — foreign key check. Ensures every value in column A
+#                       exists in column B of another model. Use on account_id,
+#                       model_variant wherever they reference a parent table.
+#
+#   dbt_utils.expression_is_true
+#                     — validates a SQL expression is true for every row.
+#                       Use for cross-column business rules — e.g. net revenue
+#                       cannot exceed gross revenue.
+#
+#   dbt_utils.not_empty_string
+#                     — column is not null AND not an empty string ''.
+#                       Use on name fields where an empty string is as bad
+#                       as null but not_null would pass it.
+#
+#   expect_column_values_to_be_between (dbt_expectations)
+#                     — numeric column must be within a range. Use on
+#                       ratios (0-1), percentages (0-100), token counts (>0).
+#
+# Severity levels:
+#   error (default)   — test failure stops the run. Use on critical columns.
+#   warn              — test failure logs a warning but run continues. Use on
+#                       fields that should be populated but are not critical.
+#
+# tags:               — labels for selective test runs.
+#   dbt test --select tag:pii        runs only PII-tagged tests
+#   dbt test --select tag:revenue    runs only revenue-tagged tests
+#
+# meta:               — custom key-value pairs for governance tooling
+#                       (DataHub, Atlan, Elementary). dbt ignores them at
+#                       runtime but catalog tools read them to populate
+#                       ownership, classification, and SLA fields.
+# ---------------------------------------------------------------------------
+
+models:
+
+  # ---------------------------------------------------------------------------
+  # Customer
+  # ---------------------------------------------------------------------------
+  - name: stg_customer_details
+    description: "Cleaned and standardised customer account data from CRM. One row per account. Primary dimension table — account_id is the foreign key across all fact tables."
+    tags: ['customer', 'pii', 'dimension']
+
+    columns:
+      - name: account_id
+        description: "Unique account identifier. Primary key. Foreign key referenced by token usage, revenue, and quota tables."
+        tags: ['pii']
+        tests:
+          - unique
+          - not_null
+
+      - name: company_id
+        description: "Parent company identifier — multiple accounts can belong to one company."
+        tests:
+          - not_null
+
+      - name: company_name
+        description: "Legal company name."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+                # warn not error — company_name can be blank for self-serve accounts
+          - dbt_utils.not_empty_string:
+              config:
+                severity: warn
+                # catches empty string '' which not_null alone would pass
+
+      - name: account_name
+        description: "Account display name — may differ from company_name for enterprise sub-accounts."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+          - dbt_utils.not_empty_string:
+              config:
+                severity: warn
+
+      - name: segment
+        description: "Customer segment assigned by sales. Drives pricing tier and support SLA."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Strategic', 'Commercial', 'Unknown']
+                where: "is_active = true"
+              # Only validate active accounts — inactive/churned accounts may have
+              # legacy segment values that are no longer valid but should not fail the test.
+
+      - name: account_size
+        description: "Company size classification based on employee count and ARR."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Enterprise', 'Mid-Market', 'SMB', 'Unknown']
+
+      - name: vertical
+        description: "Industry vertical — Technology, Financial Services, Healthcare etc."
+        tests:
+          - not_null
+
+      - name: email
+        description: "Primary contact email. Renamed from account_email in staging."
+        tags: ['pii']
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: is_active
+        description: "True if the account is currently active. False for churned or suspended accounts."
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp when this row was inserted into the bronze layer."
+        tests:
+          - not_null
+
+  # ---------------------------------------------------------------------------
+  # Inference Usage
+  # ---------------------------------------------------------------------------
+  - name: stg_token_usage_proprietary
+    description: "Cleaned token usage events for proprietary models. One row per API request. High volume fact table — appended on every request."
+    tags: ['token_usage', 'fact', 'high_volume']
+
+    tests:
+      # Cross-column business rule — total_tokens must equal the sum of its parts.
+      # Use expression_is_true for multi-column validation that no single-column
+      # test can express. Fails if any row violates the expression.
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "total_tokens >= input_tokens + output_tokens"
+          config:
+            severity: warn
+              # warn not error — rounding differences are possible
+
+    columns:
+      - name: request_id
+        description: "Unique request identifier. Primary key."
+        tests:
+          - unique
+          - not_null
+
+      - name: account_id
+        description: "Customer account — foreign key to stg_customer_details."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customer_details')
+                field: account_id
+              # Foreign key check — every account_id here must exist in
+              # stg_customer_details. Catches orphaned records from accounts
+              # that were deleted from the CRM but still have usage events.
+              config:
+                severity: warn
+
+      - name: model_variant
+        description: "{{ doc('model_variant_dec') }}"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_config_model_dimensions')
+                field: model_variant
+              config:
+                severity: warn
+
+      - name: model_type
+        description: "Always proprietary for this table — used to distinguish from open source usage."
+        tests:
+          - accepted_values:  
+              arguments:
+                values: ['proprietary']
+
+      - name: total_tokens
+        description: "Total tokens consumed by this request — input + output + cache tokens."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+              # total_tokens must be at least 1 — a request with zero tokens
+              # should never reach the database. Catches bad ingestion data.
+              config:
+                severity: warn
+
+      - name: is_error
+        description: "True if this request resulted in an API error."
+        tests:
+          - not_null
+
+      - name: event_date
+        description: "Date of the API request — truncated from event_timestamp in staging."
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp when this row was inserted into the bronze layer."
+        tests:
+          - not_null
+
+  - name: stg_token_usage_open_source
+    description: "Cleaned token usage events for open source models. One row per API request."
+    tags: ['token_usage', 'fact', 'high_volume']
+
+    tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "total_tokens >= input_tokens + output_tokens"
+          config:
+            severity: warn
+
+    columns:
+      - name: request_id
+        description: "Unique request identifier. Primary key."
+        tests:
+          - unique
+          - not_null
+
+      - name: account_id
+        description: "Customer account — foreign key to stg_customer_details."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customer_details')
+                field: account_id
+              config:
+                severity: warn
+
+      - name: model_variant
+        description: "Model used for this request — foreign key to stg_config_model_dimensions."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_config_model_dimensions')
+                field: model_variant
+              config:
+                severity: warn
+
+      - name: model_type
+        description: "Always open_source for this table."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['open_source']
+
+      - name: total_tokens
+        description: "Total tokens consumed by this request."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+              config:
+                severity: warn
+
+      - name: is_error
+        description: "True if this request resulted in an API error."
+        tests:
+          - not_null
+
+      - name: event_date
+        description: "Date of the API request."
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp when this row was inserted into the bronze layer."
+        tests:
+          - not_null
+
+  # ---------------------------------------------------------------------------
+  # Resource & Infrastructure
+  # ---------------------------------------------------------------------------
+  - name: stg_model_utilization
+    description: "Pod-level utilisation snapshots with utilisation bands. One row per pod per timestamp."
+    tags: ['resource', 'infrastructure']
+
+    columns:
+      - name: pod_id
+        description: "Unique pod identifier."
+        tests:
+          - not_null
+
+      - name: event_timestamp
+        description: "Timestamp of this utilisation snapshot."
+        tests:
+          - not_null
+
+      - name: utilisation_ratio
+        description: "Ratio of used capacity to total capacity — value between 0 and 1."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 1
+              # utilisation_ratio must be between 0 and 1 — a ratio above 1
+              # indicates a data error in the ingestion pipeline.
+
+      - name: utilisation_band
+        description: "Categorical band derived from utilisation_ratio — low (<0.5), medium (0.5-0.75), high (0.75-0.9), critical (>0.9)."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['low', 'medium', 'high', 'critical']
+                where: "utilisation_ratio IS NOT NULL"
+             
+      - name: loaded_at
+        description: "Timestamp when this row was inserted into the bronze layer."
+        tests:
+          - not_null
+
+  - name: stg_accelerator_inventory
+    description: "Daily accelerator inventory snapshots with utilisation metrics. One row per ODCR per timestamp."
+    tags: ['resource', 'infrastructure']
+
+    columns:
+      - name: capacity_reservation_id
+        description: "Unique On-Demand Capacity Reservation identifier."
+        tests:
+          - not_null
+
+      - name: event_timestamp
+        description: "Timestamp of this inventory snapshot."
+        tests:
+          - not_null
+
+      - name: used_pct
+        description: "Percentage of reserved capacity currently in use — value between 0 and 100."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 100
+
+      - name: loaded_at
+        description: "Timestamp when this row was inserted into the bronze layer."
+        tests:
+          - not_null
+
+  - name: stg_model_instance_allocation
+    description: "Instance allocation per model variant and region. One row per model + region + instance type per timestamp."
+    tags: ['resource', 'infrastructure']
+
+    columns:
+      - name: model_variant
+        description: "Model variant — foreign key to stg_config_model_dimensions."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_config_model_dimensions')
+                field: model_variant
+              config:
+                severity: warn
+
+      - name: region
+        description: "AWS region where instances are allocated."
+        tests:
+          - not_null
+
+      - name: event_timestamp
+        description: "Timestamp of this allocation snapshot."
+        tests:
+          - not_null
+
+      - name: used_pct
+        description: "Percentage of allocated instances currently in use — value between 0 and 100."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 100
+
+      - name: loaded_at
+        description: "Timestamp when this row was inserted into the bronze layer."
+        tests:
+          - not_null
+
+  # ---------------------------------------------------------------------------
+  # Model Configuration
+  # ---------------------------------------------------------------------------
+  - name: stg_config_model_dimensions
+    description: "Cleaned model configuration and capacity metrics. One row per model variant per snapshot date. Primary dimension for all model-level analysis."
+    tags: ['config', 'dimension']
+
+    columns:
+      - name: model_variant
+        description: "Unique model identifier e.g. claude-3-5-sonnet-20241022. Primary key at the model level."
+        tests:
+          - not_null
+
+      - name: model_publisher
+        description: "Organisation that published the model — Anthropic, Meta, Mistral etc."
+        tests:
+          - not_null
+
+      - name: inference_scope
+        description: "Deployment scope — global (all regions), regional (one region), multi-region (subset of regions)."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['global', 'regional', 'multi-region']
+
+      - name: is_open_source
+        description: "True if the model weights are publicly available."
+        tests:
+          - not_null
+
+      - name: snapshot_date
+        description: "Date this configuration snapshot was taken."
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp when this row was inserted into the bronze layer."
+        tests:
+          - not_null
+
+  - name: stg_config_model_region_availability
+    description: "Model regional availability and deployment status. One row per model variant + region per snapshot date."
+    tags: ['config', 'dimension']
+
+    columns:
+      - name: model_variant
+        description: "Model identifier — foreign key to stg_config_model_dimensions."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_config_model_dimensions')
+                field: model_variant
+              config:
+                severity: warn
+
+      - name: source_region
+        description: "AWS region code e.g. us-east-1."
+        tests:
+          - not_null
+
+      - name: is_region_active
+        description: "True if the model is currently deployed and accepting requests in this region."
+        tests:
+          - not_null
+
+      - name: snapshot_date
+        description: "Date this availability snapshot was taken."
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp when this row was inserted into the bronze layer."
+        tests:
+          - not_null
+
+  # ---------------------------------------------------------------------------
+  # Quota & Rate Limits
+  # ---------------------------------------------------------------------------
+  - name: stg_quota_default_rate_limits
+    description: "Default rate limits per model, inference scope, and region. One row per model + scope + region per snapshot date."
+    tags: ['quota']
+
+    tests:
+      # Business rule — daily limit must be at least as large as per-minute limit * 1440 minutes
+      # if it is smaller, the daily cap would be hit within the first minute of the day
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "default_tpd >= default_tpm"
+          config:
+            severity: warn
+
+    columns:
+      - name: model_variant
+        description: "Model — foreign key to stg_config_model_dimensions."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_config_model_dimensions')
+                field: model_variant
+              config:
+                severity: warn
+
+      - name: inference_scope
+        description: "Scope these limits apply to — global, regional, or multi-region."
+        tests:
+          - not_null
+
+      - name: source_region
+        description: "AWS region these limits apply to."
+        tests:
+          - not_null
+
+      - name: default_rpm
+        description: "Default requests per minute limit."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+          
+
+      - name: default_tpm
+        description: "Default tokens per minute limit."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+
+      - name: default_tpd
+        description: "Default tokens per day limit."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+
+      - name: snapshot_date
+        description: "Date this rate limit snapshot was taken."
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp when this row was inserted into the bronze layer."
+        tests:
+          - not_null
+
+  - name: stg_quota_customer_rate_limit_adjustments
+    description: "Per-customer rate limit adjustments above or below the default. One row per account + model + scope + region per snapshot date."
+    tags: ['quota', 'customer']
+
+    columns:
+      - name: account_id
+        description: "Customer account — foreign key to stg_customer_details."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customer_details')
+                field: account_id
+              config:
+                severity: warn
+
+      - name: model_variant
+        description: "Model — foreign key to stg_config_model_dimensions."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_config_model_dimensions')
+                field: model_variant
+              config:
+                severity: warn
+
+      - name: inference_scope
+        description: "Scope this adjustment applies to."
+        tests:
+          - not_null
+
+      - name: source_region
+        description: "Region this adjustment applies to."
+        tests:
+          - not_null
+
+      - name: adjusted_rpm
+        description: "Customer-specific requests per minute limit — overrides default_rpm."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+
+      - name: adjusted_tpm
+        description: "Customer-specific tokens per minute limit — overrides default_tpm."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+
+      - name: adjusted_tpd
+        description: "Customer-specific tokens per day limit — overrides default_tpd."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+
+      - name: is_adjustment_active
+        description: "True if this adjustment is currently in effect."
+        tests:
+          - not_null
+
+      - name: snapshot_date
+        description: "Date this adjustment snapshot was taken."
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp when this row was inserted into the bronze layer."
+        tests:
+          - not_null
+
+  # ---------------------------------------------------------------------------
+  # Revenue
+  # ---------------------------------------------------------------------------
+  - name: stg_revenue_account_daily
+    description: "Cleaned daily revenue at account + model + region grain. Core revenue fact table. One row per account + product_sku + model + scope + region + billing_type + currency + date."
+    tags: ['revenue', 'finance', 'fact']
+
+    tests:
+       # Revenue must be non-negative — negative values indicate a refund or
+      # credit note which should be modelled separately, not as negative revenue.
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "total_gross_revenue >= 0"
+          config:
+            severity: warn
+
+    columns:
+      - name: account_id
+        description: "Customer account — foreign key to stg_customer_details."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customer_details')
+                field: account_id
+              config:
+                severity: warn
+
+      - name: product_sku
+        description: "Product SKU identifying the specific product and pricing tier."
+        tests:
+          - not_null
+
+      - name: model_variant
+        description: "Model — foreign key to stg_config_model_dimensions."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_config_model_dimensions')
+                field: model_variant
+              config:
+                severity: warn
+
+      - name: total_gross_revenue
+        description: "Gross revenue before discounts and credits."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+              config:
+                severity: warn
+
+      - name: currency_code
+        description: "ISO 4217 currency code — USD, EUR, GBP etc."
+        tests:
+          - not_null
+
+      - name: billing_type
+        description: "How the customer is billed — pay-as-you-go, savings-plan, or committed-use."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['pay-as-you-go', 'savings-plan', 'committed-use']
+
+      - name: revenue_date
+        description: "Date this revenue was recognised."
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp when this row was inserted into the bronze layer."
+        tests:
+          - not_null
+
+  - name: stg_quota_customer_rate_limit_requests
+    description: "Cleaned customer rate limit change requests. One row per request."
+    tags: ['quota', 'customer']
+
+    columns:
+      - name: account_id
+        description: "Customer account that submitted the request — foreign key to stg_customer_details."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customer_details')
+                field: account_id
+              config:
+                severity: warn
+
+      - name: request_status
+        description: "Current status of the rate limit change request."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['pending', 'approved', 'rejected', 'cancelled']
+
+      - name: requested_rpm
+        description: "Requested new requests per minute limit."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+
+      - name: requested_tpm
+        description: "Requested new tokens per minute limit."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+
+      - name: requested_tpd
+        description: "Requested new tokens per day limit."
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+
+      - name: request_created_at
+        description: "Timestamp when the customer submitted this request."
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp when this row was inserted into the bronze layer."
+        tests:
+          - not_null

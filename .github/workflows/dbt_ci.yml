@@ -1,0 +1,75 @@
+# .github/workflows/dbt_ci.yml
+name: dbt CI
+on:
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'dbt/models/**'
+      - 'dbt/tests/**'
+      - 'dbt/macros/**'
+      - 'dbt/seeds/**'
+      - 'dbt/snapshots/**'
+
+env:
+  DBT_HOST:     ${{ secrets.DBT_HOST }}
+  DBT_PORT:     ${{ secrets.DBT_PORT }}
+  DBT_USER:     ${{ secrets.DBT_USER }}
+  DBT_PASSWORD: ${{ secrets.DBT_PASSWORD }}
+  DBT_DBNAME:   ${{ secrets.DBT_DBNAME }}
+
+jobs:
+  dbt-ci:
+    name: dbt CI — build modified models and run tests
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dbt packages
+        run: |
+          docker compose -f docker-compose.yml \
+            run --rm \
+            -e DBT_HOST -e DBT_PORT -e DBT_USER -e DBT_PASSWORD -e DBT_DBNAME \
+            airflow-scheduler bash -c \
+            "cd /opt/airflow/dbt && /usr/local/airflow/dbt_venv/bin/dbt deps"
+
+      - name: Download production manifest for Slim CI
+        uses: actions/download-artifact@v4
+        with:
+          name: dbt-manifest
+          path: ./prod-state/
+        continue-on-error: true
+        # First run will not have a manifest — full build runs instead
+
+      - name: Run Slim CI — modified models only
+        run: |
+          if [ -f "prod-state/manifest.json" ]; then
+            echo "Prod manifest found — running Slim CI"
+            docker compose -f docker-compose.yml \
+              run --rm \
+              -e DBT_HOST -e DBT_PORT -e DBT_USER -e DBT_PASSWORD -e DBT_DBNAME \
+              airflow-scheduler bash -c \
+              "cd /opt/airflow/dbt && /usr/local/airflow/dbt_venv/bin/dbt build \
+              --select state:modified+ \
+              --defer \
+              --state /opt/airflow/prod-state/ \
+              --target ci \
+              --profiles-dir ."
+          else
+            echo "No prod manifest — running full build"
+            docker compose -f docker-compose.yml \
+              run --rm \
+              -e DBT_HOST -e DBT_PORT -e DBT_USER -e DBT_PASSWORD -e DBT_DBNAME \
+              airflow-scheduler bash -c \
+              "cd /opt/airflow/dbt && /usr/local/airflow/dbt_venv/bin/dbt build \
+              --target ci \
+              --profiles-dir ."
+          fi
+
+      - name: Save manifest for next CI run
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-manifest
+          path: dbt/target/manifest.json
+          retention-days: 7

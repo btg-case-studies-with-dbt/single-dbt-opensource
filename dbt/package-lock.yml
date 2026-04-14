@@ -1,0 +1,29 @@
+packages:
+  - name: dbt_utils
+    package: dbt-labs/dbt_utils
+    version: 1.1.2
+  - name: codegen
+    package: dbt-labs/codegen
+    version: 0.12.1
+  - name: audit_helper
+    package: dbt-labs/audit_helper
+    version: 0.12.2
+  - name: dbt_date
+    package: godatadriven/dbt_date
+    version: 0.17.2
+  - name: dbt_expectations
+    package: metaplane/dbt_expectations
+    version: 0.10.10
+  - name: elementary
+    package: elementary-data/elementary
+    version: 0.23.0
+  - git: https://github.com/EqualExperts/dbt-unit-testing.git
+    name: dbt_unit_testing
+    revision: 119aaee2c265b693876a63de72b04c308cd3e3e2
+  - name: dbt_project_evaluator
+    package: dbt-labs/dbt_project_evaluator
+    version: 0.8.1
+  - name: dbt_artifacts
+    package: brooklyn-data/dbt_artifacts
+    version: 2.10.0
+sha1_hash: 4704b95d1e8de1a08c49bf4a2b028b9427a26c9b

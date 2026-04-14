@@ -1,0 +1,221 @@
+version: 2
+
+sources:
+  - name: raw_bronze
+    schema: raw_bronze
+    description: "Raw bronze layer — data exactly as it arrived. Never modified."
+    tags: ['bronze', 'raw']
+    meta:
+      owner: "Data Engineering"
+      data_classification: "internal"
+
+    # Default freshness applied to all tables unless overridden
+    loaded_at_field: loaded_at
+    freshness:
+      warn_after:  {count: 24, period: day}
+      error_after: {count: 48, period: day}
+
+    tables:
+
+      # ── Config tables — loaded by Airflow DAG ─────────────────────────────
+      - name: config_model_dimensions
+        description: "AI model technical specifications — publisher, accelerator type, replica count, performance metrics. Loaded once by the load_config_bronze DAG."
+        tags: ['config', 'one-time']
+        meta:
+          freshness_sla: "manual load"
+        freshness: null    # manually loaded — disable freshness check
+        columns:
+          - name: model_variant
+            description: "Unique model identifier e.g. claude-3-5-sonnet-20241022. Primary key."
+            tests:
+              - not_null
+          - name: snapshot_date
+            description: "Date this config snapshot was taken."
+            tests:
+              - not_null
+
+      - name: config_model_region_availability
+        description: "Which AI models are deployed in which AWS regions. Loaded once by the load_config_bronze DAG."
+        tags: ['config', 'one-time']
+        freshness: null    # manually loaded — disable freshness check
+        columns:
+          - name: model_variant
+            description: "Model identifier — foreign key to config_model_dimensions."
+            tests:
+              - not_null
+          - name: source_region
+            description: "AWS region code e.g. us-east-1."
+            tests:
+              - not_null
+          - name: is_active
+            description: "Whether the model is currently deployed in this region."
+            tests:
+              - not_null
+
+      # ── Customer data ─────────────────────────────────────────────────────
+      - name: customer_details
+        description: "Customer account master data — segment, vertical, account size. Append-only."
+        tags: ['customer', 'pii']
+        meta:
+          data_classification: "confidential"
+        freshness:
+          warn_after:  {count: 30, period: day}
+          error_after: {count: 60, period: day}
+        columns:
+          - name: account_id
+            description: "Unique customer account identifier. Primary key."
+            tags: ['primary_key', 'pii']
+            tests:
+              - not_null
+              - unique
+          - name: loaded_at
+            description: "Timestamp when this row was inserted into the bronze layer."
+            tests:
+              - not_null
+
+      # ── Token usage — core fact tables ───────────────────────────────────
+      - name: inference_user_token_usage_open_source
+        description: "Per-request token usage events for open source models. High volume — appended on every API request."
+        tags: ['token_usage', 'high_volume']
+        freshness:
+          warn_after:  {count: 6,  period: day}
+          error_after: {count: 12, period: day}
+        columns:
+          - name: request_id
+            description: "Unique identifier for each API request. Primary key."
+            tags: ['primary_key']
+            tests:
+              - not_null
+              - unique
+          - name: account_id
+            description: "Customer account — foreign key to customer_details."
+            tests:
+              - not_null
+          - name: model_variant
+            description: "Model used for this request."
+            tests:
+              - not_null
+          - name: source_region
+            description: "AWS region where the request originated."
+            tests:
+              - not_null
+
+      - name: inference_user_token_usage_proprietary
+        description: "Per-request token usage events for proprietary models. High volume — appended on every API request."
+        tags: ['token_usage', 'high_volume']
+        freshness:
+          warn_after:  {count: 6,  period: day}
+          error_after: {count: 12, period: day}
+        columns:
+          - name: request_id
+            description: "Unique identifier for each API request. Primary key."
+            tags: ['primary_key']
+            tests:
+              - not_null
+              - unique
+          - name: account_id
+            description: "Customer account — foreign key to customer_details."
+            tests:
+              - not_null
+          - name: model_variant
+            description: "Model used for this request."
+            tests:
+              - not_null
+          - name: source_region
+            description: "AWS region where the request originated."
+            tests:
+              - not_null
+
+      # ── Resource utilization ──────────────────────────────────────────────
+      - name: resource_accelerator_inventory
+        description: "GPU/TPU accelerator inventory snapshots by model and region."
+        tags: ['resource']
+        columns:
+          - name: loaded_at
+            tests:
+              - not_null
+
+      - name: resource_model_utilization
+        description: "Model utilization rates — ratio of allocated vs used capacity per model per region."
+        tags: ['resource']
+        columns:
+          - name: model_variant
+            tests:
+              - not_null
+          - name: loaded_at
+            tests:
+              - not_null
+
+      - name: resource_model_instance_allocation
+        description: "Model instance allocation counts — how many instances are allocated vs used."
+        tags: ['resource']
+        columns:
+          - name: model_variant
+            tests:
+              - not_null
+          - name: loaded_at
+            tests:
+              - not_null
+
+      # ── Revenue ───────────────────────────────────────────────────────────
+      - name: revenue_account_daily
+        description: "Daily revenue at account + product_sku + model_variant + region grain. Core revenue fact table."
+        tags: ['revenue', 'finance']
+        freshness:
+          warn_after:  {count: 25, period: day}
+          error_after: {count: 49, period: day}
+        columns:
+          - name: account_id
+            description: "Customer account — foreign key to customer_details."
+            tests:
+              - not_null
+          - name: model_variant
+            description: "Model — foreign key to config_model_dimensions."
+            tests:
+              - not_null
+          - name: loaded_at
+            tests:
+              - not_null
+
+      # ── Quota and rate limits ─────────────────────────────────────────────
+      - name: quota_default_rate_limits
+        description: "Default rate limits per model per region — tokens per minute, requests per minute."
+        tags: ['quota']
+        freshness:
+          warn_after:  {count: 70, period: day}
+          error_after: {count: 140, period: day}
+        columns:
+          - name: model_variant
+            tests:
+              - not_null
+          - name: source_region
+            tests:
+              - not_null
+
+      - name: quota_customer_rate_limit_adjustments
+        description: "Customer-specific rate limit overrides — increases or decreases from the default limits."
+        tags: ['quota', 'customer']
+        columns:
+          - name: account_id
+            tests:
+              - not_null
+          - name: model_variant
+            tests:
+              - not_null
+          - name: loaded_at
+            tests:
+              - not_null
+
+      - name: quota_customer_rate_limit_requests
+        description: "Customer requests to change their rate limits — upgrade or downgrade requests with approval status."
+        tags: ['quota', 'customer']
+        columns:
+          - name: account_id
+            tests:
+              - not_null
+          - name: model_variant
+            tests:
+              - not_null
+          - name: loaded_at
+            tests:
+              - not_null

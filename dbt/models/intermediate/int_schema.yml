@@ -1,0 +1,270 @@
+version: 2
+groups:
+  - name: finance
+    owner:
+      name: Finance Team
+      email: finance@company.com
+      
+models:
+
+  # ============================================================================
+  # int_token_usage_minute
+  # ============================================================================
+  - name: int_token_usage_minute
+    description: "Minute-level token usage combining proprietary and open source inference. Union of stg_token_usage_proprietary and stg_token_usage_open_source enriched with customer, model, and region dimensions. One row per account, model, region, and minute."
+    columns:
+
+      # -- Customer dimensions (names updated to match stg_customer_details) --
+      - name: account_id
+        description: "Customer account identifier"
+        tests:
+          - not_null
+
+      - name: company_name
+        description: "Company name from customer_details"
+        tests:
+          - not_null
+
+      - name: segment
+        description: "Account segment: Strategic, Commercial"
+        tests:
+          - not_null
+
+      - name: vertical
+        description: "Industry vertical: FinTech, SaaS, HealthTech, etc."
+        tests:
+          - not_null
+
+      - name: account_size
+        description: "Account size: Enterprise, Mid-Market, SMB"
+        tests:
+          - not_null
+
+      # -- Model dimensions --
+      - name: model_variant
+        description: "Model variant identifier"
+        tests:
+          - not_null
+
+      - name: model_type
+        description: "proprietary or open_source"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['proprietary', 'open_source']
+
+      - name: model_family
+        description: "Model family from config_model_dimensions"
+
+      - name: model_publisher
+        description: "Model publisher from config_model_dimensions"
+
+      # -- Region dimensions --
+      - name: source_region
+        description: "AWS source region"
+        tests:
+          - not_null
+
+      - name: inference_region
+        description: "AWS inference region"
+        tests:
+          - not_null
+
+      - name: inference_scope
+        description: "global, regional, or multi-region"
+        tests:
+          - not_null
+
+      - name: traffic_type
+        description: "Type of traffic: standard, batch, etc."
+
+      - name: territory
+        description: "AWS territory from region_mapping seed"
+
+      - name: govcloud
+        description: "True if this is an AWS GovCloud region"
+
+      # -- Time grain --
+      - name: minute_timestamp
+        description: "Truncated to minute — the grain of this table"
+        tests:
+          - not_null
+
+      - name: event_date
+        description: "Date of the event"
+        tests:
+          - not_null
+
+      # -- Metrics --
+      - name: request_count
+        description: "Number of requests in this minute (RPM)"
+        tests:
+          - not_null
+
+      - name: input_tokens
+        description: "Total input tokens in this minute"
+        tests:
+          - not_null
+
+      - name: output_tokens
+        description: "Total output tokens in this minute"
+        tests:
+          - not_null
+
+      - name: cache_read_tokens
+        description: "Total cache read tokens in this minute"
+        tests:
+          - not_null
+
+      - name: cache_write_tokens
+        description: "Total cache write tokens in this minute"
+        tests:
+          - not_null
+
+      - name: total_tokens
+        description: "Total tokens in this minute (TPM)"
+        tests:
+          - not_null
+
+      - name: error_count
+        description: "Number of errored requests in this minute"
+        tests:
+          - not_null
+
+      - name: error_rate_pct
+        description: "Percentage of requests that resulted in an error"
+
+      - name: loaded_at
+        description: "Latest loaded_at from source records"
+        tests:
+          - not_null
+
+  # ============================================================================
+  # int_revenue_daily
+  # ============================================================================
+  - name: int_revenue_daily
+    description: "Daily revenue enriched with customer, model, and region dimensions. One row per account, model, region, and revenue date. Net revenue derived as gross revenue minus savings plan and discounts."
+    config:
+      group: finance
+      access: private
+
+
+    columns:
+
+      # -- Customer dimensions --
+      - name: account_id
+        description: "Customer account identifier"
+        tests:
+          - not_null
+
+      - name: company_name
+        description: "Company name from customer_details"
+        tests:
+          - not_null
+
+      - name: segment
+        description: "Account segment: Strategic, Commercial"
+        tests:
+          - not_null
+
+      - name: vertical
+        description: "Industry vertical"
+        tests:
+          - not_null
+
+      - name: account_size
+        description: "Account size: Enterprise, Mid-Market, SMB"
+        tests:
+          - not_null
+
+      # -- Model dimensions --
+      - name: model_variant
+        description: "Model variant identifier"
+        tests:
+          - not_null
+
+      - name: product_sku
+        description: "Product SKU"
+        tests:
+          - not_null
+
+      - name: inference_scope
+        description: "global, regional, or multi-region"
+        tests:
+          - not_null
+
+      - name: billing_type
+        description: "Billing type: pay-as-you-go, savings-plan, committed-use"
+        tests:
+          - not_null
+
+      - name: model_family
+        description: "Model family from config_model_dimensions"
+
+      - name: model_publisher
+        description: "Model publisher from config_model_dimensions"
+
+      # -- Region dimensions --
+      - name: source_region
+        description: "AWS source region"
+        tests:
+          - not_null
+
+      - name: territory
+        description: "AWS territory from region_mapping seed"
+
+      - name: govcloud
+        description: "True if this is an AWS GovCloud region"
+
+      # -- Revenue metrics --
+      - name: gross_rev_input_tokens
+        description: "Gross revenue from input tokens"
+        tests:
+          - not_null
+
+      - name: gross_rev_output_tokens
+        description: "Gross revenue from output tokens"
+        tests:
+          - not_null
+
+      - name: gross_rev_cache_read_tokens
+        description: "Gross revenue from cache read tokens"
+        tests:
+          - not_null
+
+      - name: gross_rev_cache_write_tokens
+        description: "Gross revenue from cache write tokens"
+        tests:
+          - not_null
+
+      - name: total_gross_revenue
+        description: "Total gross revenue — sum of all token revenue components"
+        tests:
+          - not_null
+
+      - name: savings_plan_amount
+        description: "Savings plan discount applied"
+
+      - name: discount_amount
+        description: "Additional discount applied"
+
+      - name: net_revenue
+        description: "Net revenue after savings plan and discounts"
+        tests:
+          - not_null
+
+      - name: revenue_date
+        description: "Date of the revenue — grain of this table"
+        tests:
+          - not_null
+
+      - name: currency_code
+        description: "Currency code e.g. USD"
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp when record was loaded into bronze"
+        tests:
+          - not_null

@@ -52,6 +52,8 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
       - ./dbt:/opt/airflow/dbt
+      - ${HOME}/Documents/btg-case-studies-with-dbt/common/database_scripts:/opt/airflow/database_scripts
+    command: webserver
 
   airflow-scheduler:
     build:
@@ -71,6 +73,7 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
       - ./dbt:/opt/airflow/dbt
+      - ${HOME}/Documents/btg-case-studies-with-dbt/common/database_scripts:/opt/airflow/database_scripts
     command: scheduler
 
   metabase:

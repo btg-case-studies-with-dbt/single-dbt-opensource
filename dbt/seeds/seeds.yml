@@ -1,0 +1,46 @@
+version: 2
+
+seeds:
+  - name: region_mapping
+    description: "AWS region reference data — maps AWS region codes to territories, airport codes, and GovCloud flags. 29 rows, one per AWS region. Static reference table — changes only when AWS adds new regions."
+    tags: ['reference', 'static', 'seeds']
+    
+    config:
+      schema: seeds
+      column_types:
+        source_region: varchar
+        airport_code:  varchar
+        territory:     varchar
+        govcloud:      boolean   # critical — must be boolean, not varchar
+        description:   varchar
+
+    columns:
+      - name: source_region
+        description: "AWS region code e.g. us-east-1. Primary key — one row per region."
+        tests:
+          - unique
+          - not_null
+
+      - name: airport_code
+        description: "Three-letter IATA airport code for the region's physical location e.g. IAD for us-east-1."
+        tests:
+          - not_null
+
+      - name: territory
+        description: "Geographic territory grouping. Used to aggregate metrics by region in mart models."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['US', 'North America', 'Europe', 'Asia Pacific', 'Middle East', 'Africa', 'South America', 'China', 'US GovCloud']
+              
+
+      - name: govcloud
+        description: "True if this is an AWS GovCloud region requiring special compliance handling. Must be boolean — dbt infers varchar from CSV without explicit column_types declaration."
+        tests:
+          - not_null
+
+      - name: description
+        description: "Human-readable region description e.g. 'US East (N. Virginia) - Primary US region'."
+        tests:
+          - not_null

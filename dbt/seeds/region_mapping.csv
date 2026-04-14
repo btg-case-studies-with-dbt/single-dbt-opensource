@@ -1,0 +1,30 @@
+source_region,airport_code,territory,govcloud,description
+us-east-1,IAD,US,false,US East (N. Virginia) - Primary US region with most services
+us-east-2,CMH,US,false,US East (Ohio) - Secondary US East region
+us-west-1,SFO,US,false,US West (N. California) - San Francisco Bay Area region
+us-west-2,PDX,US,false,US West (Oregon) - Pacific Northwest region
+ca-central-1,YUL,North America,false,Canada (Montreal) - Canadian region
+eu-central-1,FRA,Europe,false,Europe (Frankfurt) - Primary European region in Germany
+eu-west-1,DUB,Europe,false,Europe (Ireland) - Primary European region for many services
+eu-west-2,LHR,Europe,false,Europe (London) - UK region
+eu-west-3,CDG,Europe,false,Europe (Paris) - France region
+eu-south-1,MXP,Europe,false,Europe (Milan) - Southern Europe region in Italy
+eu-south-2,ZAZ,Europe,false,Europe (Spain) - Spain region
+eu-north-1,ARN,Europe,false,Europe (Stockholm) - Northern Europe region in Sweden
+ap-northeast-1,NRT,Asia Pacific,false,Asia Pacific (Tokyo) - Primary Asia Pacific region in Japan
+ap-northeast-2,ICN,Asia Pacific,false,Asia Pacific (Seoul) - South Korea region
+ap-northeast-3,KIX,Asia Pacific,false,Asia Pacific (Osaka) - Secondary Japan region
+ap-southeast-1,SIN,Asia Pacific,false,Asia Pacific (Singapore) - Southeast Asia hub region
+ap-southeast-2,SYD,Asia Pacific,false,Asia Pacific (Sydney) - Australia region
+ap-southeast-3,CGK,Asia Pacific,false,Asia Pacific (Jakarta) - Indonesia region
+ap-south-1,BOM,Asia Pacific,false,Asia Pacific (Mumbai) - Primary India region
+ap-south-2,HYD,Asia Pacific,false,Asia Pacific (Hyderabad) - Secondary India region
+ap-east-1,HKG,Asia Pacific,false,Asia Pacific (Hong Kong) - Hong Kong region
+me-south-1,BAH,Middle East,false,Middle East (Bahrain) - Middle East region
+me-central-1,UAE,Middle East,false,Middle East (UAE) - United Arab Emirates region
+af-south-1,CPT,Africa,false,Africa (Cape Town) - African region in South Africa
+sa-east-1,GRU,South America,false,South America (São Paulo) - Brazil region
+cn-north-1,BJS,China,false,China (Beijing) - Northern China region (separate partition)
+cn-northwest-1,ZHY,China,false,China (Ningxia) - Northwestern China region (separate partition)
+us-gov-west-1,PDX,US GovCloud,true,AWS GovCloud (US-West) - US government region in Oregon
+us-gov-east-1,CMH,US GovCloud,true,AWS GovCloud (US-East) - US government region in Ohio

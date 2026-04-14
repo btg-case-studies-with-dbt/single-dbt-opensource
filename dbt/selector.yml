@@ -1,0 +1,40 @@
+# dbt/selectors.yml
+selectors:
+  - name: personal_build
+    description: "Full build in personal schema"
+    definition:
+      method: path
+      value: models
+
+  - name: revenue_only
+    description: "All revenue mart models"
+    definition:
+      method: tag
+      value: revenue
+
+  - name: finance_group
+    description: "All models owned by finance group"
+    definition:
+      method: group
+      value: finance
+
+  - name: ci_modified
+    description: "Modified models + downstream — standard CI selector"
+    definition:
+      union:
+        - method: state
+          value: modified
+          children: true
+        - method: state
+          value: new
+
+  - name: failed_retry
+    description: "Retry errored and failed models from last run"
+    definition:
+      union:
+        - method: result
+          value: error
+          children: true
+        - method: result
+          value: fail
+          children: true
