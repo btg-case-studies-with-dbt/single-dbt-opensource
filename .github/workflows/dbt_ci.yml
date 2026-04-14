@@ -28,7 +28,9 @@ jobs:
       - name: Install dbt packages
         run: |
           docker compose -f docker-compose.yml \
-            run --rm airflow-scheduler bash -c \
+            run --rm \
+            -e DBT_HOST -e DBT_PORT -e DBT_USER -e DBT_PASSWORD -e DBT_DBNAME \
+            airflow-scheduler bash -c \
             "cd /opt/airflow/dbt && /usr/local/airflow/dbt_venv/bin/dbt deps"
 
       - name: Download production manifest for Slim CI
@@ -44,7 +46,9 @@ jobs:
           if [ -f "prod-state/manifest.json" ]; then
             echo "Prod manifest found — running Slim CI"
             docker compose -f docker-compose.yml \
-              run --rm airflow-scheduler bash -c \
+              run --rm \
+              -e DBT_HOST -e DBT_PORT -e DBT_USER -e DBT_PASSWORD -e DBT_DBNAME \
+              airflow-scheduler bash -c \
               "cd /opt/airflow/dbt && /usr/local/airflow/dbt_venv/bin/dbt build \
               --select state:modified+ \
               --defer \
@@ -54,7 +58,9 @@ jobs:
           else
             echo "No prod manifest — running full build"
             docker compose -f docker-compose.yml \
-              run --rm airflow-scheduler bash -c \
+              run --rm \
+              -e DBT_HOST -e DBT_PORT -e DBT_USER -e DBT_PASSWORD -e DBT_DBNAME \
+              airflow-scheduler bash -c \
               "cd /opt/airflow/dbt && /usr/local/airflow/dbt_venv/bin/dbt build \
               --target ci \
               --profiles-dir ."
