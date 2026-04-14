@@ -1,0 +1,30 @@
+# .github/workflows/dbt_prod.yml
+name: dbt Production
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  trigger-airflow:
+    name: dbt Production — trigger Airflow pipeline_daily
+    runs-on: self-hosted
+    steps:
+      - name: Trigger pipeline_daily DAG
+        run: |
+          docker exec btg-airflow-scheduler \
+            airflow dags trigger pipeline_daily
+
+      - name: Wait for DAG completion
+        run: |
+          sleep 30
+          docker exec btg-airflow-scheduler \
+            airflow dags list-runs --dag-id pipeline_daily --limit 1
+
+      - name: Save production manifest
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-manifest
+          path: dbt/target/manifest.json
+          retention-days: 7
