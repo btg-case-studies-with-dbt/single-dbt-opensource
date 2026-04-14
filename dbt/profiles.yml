@@ -11,3 +11,12 @@ resource_utilization_postgres:
       dbname: btg_resource_utilization
       schema: prod
       threads: 4
+    ci:
+      type: postgres
+      host: "{{ env_var('DBT_HOST') }}"
+      port: "{{ env_var('DBT_PORT') | int }}"
+      user: "{{ env_var('DBT_USER') }}"
+      password: "{{ env_var('DBT_PASSWORD') }}"
+      dbname: "{{ env_var('DBT_DBNAME') }}"
+      schema: ci
+      threads: 4
