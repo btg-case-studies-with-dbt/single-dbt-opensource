@@ -11,11 +11,7 @@ with daily_revenue as (
 
     select
         model_variant,
-        model_family,
-        model_publisher,
         source_region,
-        territory,
-        govcloud,
         account_id,
         revenue_date,
         total_gross_revenue,
@@ -29,6 +25,48 @@ with daily_revenue as (
 
 ),
 
+dim_model as (
+
+    select
+        model_variant,
+        model_family,
+        model_publisher
+
+    from {{ ref('dim_model') }}
+
+),
+
+dim_region as (
+
+    select
+        source_region,
+        territory,
+        govcloud
+
+    from {{ ref('dim_region') }}
+
+),
+
+enriched as (
+
+    select
+        dr.model_variant,
+        dm.model_family,
+        dm.model_publisher,
+        dr.source_region,
+        dre.territory,
+        dre.govcloud,
+        dr.account_id,
+        dr.revenue_date,
+        dr.total_gross_revenue,
+        dr.net_revenue
+
+    from daily_revenue dr
+    left join dim_model  dm  on dr.model_variant = dm.model_variant
+    left join dim_region dre on dr.source_region  = dre.source_region
+
+),
+
 monthly as (
 
     select
@@ -38,35 +76,21 @@ monthly as (
         source_region,
         territory,
         govcloud,
-        
-        -- Month boundaries
         date_trunc('month', revenue_date)::date                     as month_start_date,
-        (date_trunc('month', revenue_date) 
+        (date_trunc('month', revenue_date)
             + interval '1 month' - interval '1 day')::date          as month_end_date,
-
-        -- Aggregated revenue
         sum(total_gross_revenue)                                    as total_gross_revenue,
         sum(net_revenue)                                            as total_net_revenue,
-        
-        -- Customer metrics
         count(distinct account_id)                                  as unique_customers,
-        
-        -- Daily metrics
         count(distinct revenue_date)                                as active_days,
         round(avg(net_revenue), 2)                                  as avg_daily_net_revenue,
         max(net_revenue)                                            as max_daily_net_revenue
 
-    from daily_revenue
-    
-    group by 
-        model_variant,
-        model_family,
-        model_publisher,
-        source_region,
-        territory,
-        govcloud,
-        month_start_date,
-        month_end_date
+    from enriched
+    group by
+        model_variant, model_family, model_publisher,
+        source_region, territory, govcloud,
+        month_start_date, month_end_date
 
 ),
 
@@ -74,72 +98,59 @@ with_prior_month as (
 
     select
         m.*,
-
-        -- Prior month revenue for MoM comparison
         lag(m.total_gross_revenue) over (
             partition by m.model_variant, m.source_region
             order by m.month_start_date
         )                                                           as prior_month_gross_revenue,
-
         lag(m.total_net_revenue) over (
             partition by m.model_variant, m.source_region
             order by m.month_start_date
         )                                                           as prior_month_net_revenue,
-
         lag(m.unique_customers) over (
             partition by m.model_variant, m.source_region
             order by m.month_start_date
         )                                                           as prior_month_unique_customers,
-
-        -- MoM absolute change
         m.total_gross_revenue - lag(m.total_gross_revenue) over (
             partition by m.model_variant, m.source_region
             order by m.month_start_date
         )                                                           as mom_gross_revenue_change,
-
         m.total_net_revenue - lag(m.total_net_revenue) over (
             partition by m.model_variant, m.source_region
             order by m.month_start_date
         )                                                           as mom_net_revenue_change,
-
         m.unique_customers - lag(m.unique_customers) over (
             partition by m.model_variant, m.source_region
             order by m.month_start_date
         )                                                           as mom_customer_change,
-
-        -- MoM percentage change
-        case 
+        case
             when lag(m.total_gross_revenue) over (
-                partition by m.model_variant, m.source_region 
+                partition by m.model_variant, m.source_region
                 order by m.month_start_date
             ) > 0 then
                 round(
                     (m.total_gross_revenue - lag(m.total_gross_revenue) over (
-                        partition by m.model_variant, m.source_region 
+                        partition by m.model_variant, m.source_region
                         order by m.month_start_date
                     )) / lag(m.total_gross_revenue) over (
-                        partition by m.model_variant, m.source_region 
+                        partition by m.model_variant, m.source_region
                         order by m.month_start_date
-                    ) * 100, 
-                    2
+                    ) * 100, 2
                 )
             else null
         end                                                         as mom_gross_revenue_pct_change,
-
-        case 
+        case
             when lag(m.total_net_revenue) over (
-                partition by m.model_variant, m.source_region 
+                partition by m.model_variant, m.source_region
                 order by m.month_start_date
             ) > 0 then
                 round(
                     (m.total_net_revenue - lag(m.total_net_revenue) over (
-                        partition by m.model_variant, m.source_region 
+                        partition by m.model_variant, m.source_region
                         order by m.month_start_date
                     )) / lag(m.total_net_revenue) over (
-                        partition by m.model_variant, m.source_region 
+                        partition by m.model_variant, m.source_region
                         order by m.month_start_date
-                    ) * 100, 
-                    2
+                    ) * 100, 2
                 )
             else null
         end                                                         as mom_net_revenue_pct_change

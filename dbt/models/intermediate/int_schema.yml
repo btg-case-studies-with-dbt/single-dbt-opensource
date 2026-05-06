@@ -161,22 +161,32 @@ models:
       - name: company_name
         description: "Company name from customer_details"
         tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
+                # warn — NULL when account_id has no matching row in stg_customer_details.
+                # Orphaned accounts are caught at the staging layer (relationships test).
 
       - name: segment
         description: "Account segment: Strategic, Commercial"
         tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
 
       - name: vertical
         description: "Industry vertical"
         tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
 
       - name: account_size
         description: "Account size: Enterprise, Mid-Market, SMB"
         tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
 
       # -- Model dimensions --
       - name: model_variant

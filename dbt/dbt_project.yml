@@ -49,6 +49,11 @@ models:
       +post-hook:
         - "GRANT ALL ON {{ this }} TO analytics_engineer"
         - "GRANT SELECT ON {{ this }} TO business_user"
+      dimensions:
+        +materialized: table
+        +post-hook:
+          - "GRANT ALL ON {{ this }} TO analytics_engineer"
+          - "GRANT SELECT ON {{ this }} TO business_user"
   elementary:
     +schema: elementary
   dbt_project_evaluator:

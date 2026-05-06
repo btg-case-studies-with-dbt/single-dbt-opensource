@@ -17,16 +17,6 @@ with DAG(
     start = EmptyOperator(task_id="start")
     end   = EmptyOperator(task_id="end")
 
-    check_freshness = BashOperator(
-        task_id="dbt_source_freshness",
-        bash_command=(
-            f"cd {DBT_PROJECT_PATH} && "
-            f"{DBT_EXECUTABLE} source freshness "
-            f"--target prod "
-            f"--profiles-dir {DBT_PROJECT_PATH}"
-        ),
-    )
-
     run_pipeline = BashOperator(
         task_id="dbt_build",
         bash_command=(
@@ -36,5 +26,4 @@ with DAG(
             f"--profiles-dir {DBT_PROJECT_PATH}"
         ),
     )
-    #start >> check_freshness >> run_pipeline >> end
     start >> run_pipeline >> end

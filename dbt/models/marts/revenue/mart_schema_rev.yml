@@ -3,448 +3,448 @@
 
 models:
   - name: model_revenue_monthly
-    description: ""
+    description: "Monthly revenue aggregated at model variant + source region level. One row per model_variant + source_region + month. Incremental with delete+insert — lookback window is 2 months. Includes MoM absolute and percentage changes in gross revenue, net revenue, and unique customer count."
     group: finance
     columns:
       - name: model_variant
         data_type: character varying
-        description: ""
+        description: "Model variant identifier e.g. claude-3-5-sonnet-20241022. Part of the composite unique key."
 
       - name: model_family
         data_type: character varying
-        description: ""
+        description: "Model family grouping e.g. Claude 3, Claude 3.5. Joined from dim_model."
 
       - name: model_publisher
         data_type: character varying
-        description: ""
+        description: "Organisation that published the model — Anthropic, Meta, Mistral etc. Joined from dim_model."
 
       - name: source_region
         data_type: character varying
-        description: ""
+        description: "AWS region where the request originated e.g. us-east-1. Part of the composite unique key."
 
       - name: territory
         data_type: character varying
-        description: ""
+        description: "AWS territory grouping — Americas, EMEA, APAC. Joined from dim_region."
 
       - name: govcloud
         data_type: boolean
-        description: ""
+        description: "{{ doc('govcloud_definition') }}"
 
       - name: month_start_date
         data_type: date
-        description: ""
+        description: "First day of the calendar month. Part of the composite unique key."
 
       - name: month_end_date
         data_type: date
-        description: ""
+        description: "Last day of the calendar month."
 
       - name: total_gross_revenue
         data_type: numeric
-        description: ""
+        description: "Total gross revenue across all customers using this model in this region for the month, before discounts and credits."
 
       - name: total_net_revenue
         data_type: numeric
-        description: ""
+        description: "{{ doc('net_revenue_definition') }}"
 
       - name: unique_customers
         data_type: bigint
-        description: ""
+        description: "Number of distinct customer accounts that generated revenue from this model + region in the month."
 
       - name: active_days
         data_type: bigint
-        description: ""
+        description: "Number of distinct days with revenue activity in the month."
 
       - name: avg_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Average net revenue per active day in the month."
 
       - name: max_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Highest single-day net revenue in the month."
 
       - name: prior_month_gross_revenue
         data_type: numeric
-        description: ""
+        description: "Gross revenue from the previous calendar month. NULL for the first month on record for this model + region."
 
       - name: prior_month_net_revenue
         data_type: numeric
-        description: ""
+        description: "Net revenue from the previous calendar month. NULL for the first month on record."
 
       - name: prior_month_unique_customers
         data_type: bigint
-        description: ""
+        description: "Unique customer count from the previous calendar month. NULL for the first month on record."
 
       - name: mom_gross_revenue_change
         data_type: numeric
-        description: ""
+        description: "{{ doc('mom_change_definition') }} Applied to gross revenue."
 
       - name: mom_net_revenue_change
         data_type: numeric
-        description: ""
+        description: "Month-over-month absolute change in net revenue. NULL for the first month on record."
 
       - name: mom_customer_change
         data_type: bigint
-        description: ""
+        description: "Month-over-month absolute change in unique customer count. NULL for the first month on record."
 
       - name: mom_gross_revenue_pct_change
         data_type: numeric
-        description: ""
+        description: "Month-over-month percentage change in gross revenue. NULL when prior month is zero or missing."
 
       - name: mom_net_revenue_pct_change
         data_type: numeric
-        description: ""
+        description: "Month-over-month percentage change in net revenue. NULL when prior month is zero or missing."
 
   - name: model_revenue_weekly
-    description: ""
+    description: "Weekly revenue aggregated at model variant + source region level. One row per model_variant + source_region + week (Monday–Sunday). Incremental with delete+insert — lookback window is 2 weeks. Includes WoW absolute and percentage changes in gross revenue, net revenue, and unique customer count."
     group: finance
     columns:
       - name: model_variant
         data_type: character varying
-        description: ""
+        description: "Model variant identifier e.g. claude-3-5-sonnet-20241022. Part of the composite unique key."
 
       - name: model_family
         data_type: character varying
-        description: ""
+        description: "Model family grouping e.g. Claude 3, Claude 3.5. Joined from dim_model."
 
       - name: model_publisher
         data_type: character varying
-        description: ""
+        description: "Organisation that published the model — Anthropic, Meta, Mistral etc. Joined from dim_model."
 
       - name: source_region
         data_type: character varying
-        description: ""
+        description: "AWS region where the request originated e.g. us-east-1. Part of the composite unique key."
 
       - name: territory
         data_type: character varying
-        description: ""
+        description: "AWS territory grouping — Americas, EMEA, APAC. Joined from dim_region."
 
       - name: govcloud
         data_type: boolean
-        description: ""
+        description: "{{ doc('govcloud_definition') }}"
 
       - name: week_start_date
         data_type: date
-        description: ""
+        description: "First day (Monday) of the week. Part of the composite unique key."
 
       - name: week_end_date
         data_type: date
-        description: ""
+        description: "Last day (Sunday) of the week."
 
       - name: total_gross_revenue
         data_type: numeric
-        description: ""
+        description: "Total gross revenue across all customers using this model in this region for the week, before discounts and credits."
 
       - name: total_net_revenue
         data_type: numeric
-        description: ""
+        description: "{{ doc('net_revenue_definition') }}"
 
       - name: unique_customers
         data_type: bigint
-        description: ""
+        description: "Number of distinct customer accounts that generated revenue from this model + region in the week."
 
       - name: active_days
         data_type: bigint
-        description: ""
+        description: "Number of distinct days with revenue activity in the week."
 
       - name: avg_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Average net revenue per active day in the week."
 
       - name: max_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Highest single-day net revenue in the week."
 
       - name: prior_week_gross_revenue
         data_type: numeric
-        description: ""
+        description: "Gross revenue from the previous week. NULL for the first week on record for this model + region."
 
       - name: prior_week_net_revenue
         data_type: numeric
-        description: ""
+        description: "Net revenue from the previous week. NULL for the first week on record."
 
       - name: prior_week_unique_customers
         data_type: bigint
-        description: ""
+        description: "Unique customer count from the previous week. NULL for the first week on record."
 
       - name: wow_gross_revenue_change
         data_type: numeric
-        description: ""
+        description: "Week-over-week absolute change in gross revenue. NULL for the first week on record."
 
       - name: wow_net_revenue_change
         data_type: numeric
-        description: ""
+        description: "Week-over-week absolute change in net revenue. NULL for the first week on record."
 
       - name: wow_customer_change
         data_type: bigint
-        description: ""
+        description: "Week-over-week absolute change in unique customer count. NULL for the first week on record."
 
       - name: wow_gross_revenue_pct_change
         data_type: numeric
-        description: ""
+        description: "Week-over-week percentage change in gross revenue. NULL when prior week is zero or missing."
 
       - name: wow_net_revenue_pct_change
         data_type: numeric
-        description: ""
+        description: "Week-over-week percentage change in net revenue. NULL when prior week is zero or missing."
 
   - name: model_revenue_ytd
-    description: ""
+    description: "Year-to-date revenue aggregated at model variant + source region level. One row per model_variant + source_region for the current calendar year. Static table — rebuilt on each run. Includes revenue rankings within model family, within region, and overall, plus cumulative revenue share for Pareto analysis."
     group: finance
     columns:
       - name: model_variant
         data_type: character varying
-        description: ""
+        description: "Model variant identifier e.g. claude-3-5-sonnet-20241022."
 
       - name: model_family
         data_type: character varying
-        description: ""
+        description: "Model family grouping e.g. Claude 3, Claude 3.5. Joined from dim_model."
 
       - name: model_publisher
         data_type: character varying
-        description: ""
+        description: "Organisation that published the model — Anthropic, Meta, Mistral etc. Joined from dim_model."
 
       - name: source_region
         data_type: character varying
-        description: ""
+        description: "AWS region where the request originated e.g. us-east-1."
 
       - name: territory
         data_type: character varying
-        description: ""
+        description: "AWS territory grouping — Americas, EMEA, APAC. Joined from dim_region."
 
       - name: govcloud
         data_type: boolean
-        description: ""
+        description: "{{ doc('govcloud_definition') }}"
 
       - name: ytd_start_date
         data_type: date
-        description: ""
+        description: "Earliest revenue date in the current calendar year for this model + region."
 
       - name: ytd_end_date
         data_type: date
-        description: ""
+        description: "Latest revenue date in the current calendar year for this model + region."
 
       - name: year
         data_type: numeric
-        description: ""
+        description: "Calendar year — extracted from ytd_end_date."
 
       - name: ytd_gross_revenue
         data_type: numeric
-        description: ""
+        description: "Total gross revenue year-to-date before discounts and credits."
 
       - name: ytd_net_revenue
         data_type: numeric
-        description: ""
+        description: "Total net revenue year-to-date. {{ doc('net_revenue_definition') }}"
 
       - name: unique_customers_ytd
         data_type: bigint
-        description: ""
+        description: "Number of distinct customer accounts that generated revenue year-to-date."
 
       - name: active_days
         data_type: bigint
-        description: ""
+        description: "Number of distinct days with revenue activity year-to-date."
 
       - name: avg_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Average net revenue per active day year-to-date."
 
       - name: max_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Highest single-day net revenue year-to-date."
 
       - name: min_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Lowest single-day net revenue year-to-date."
 
       - name: active_months
         data_type: bigint
-        description: ""
+        description: "Number of distinct calendar months with revenue activity year-to-date."
 
       - name: avg_monthly_net_revenue
         data_type: numeric
-        description: ""
+        description: "Average net revenue per active month year-to-date."
 
       - name: rank_in_family
         data_type: bigint
-        description: ""
+        description: "Revenue rank within the model family ordered by ytd_net_revenue descending. Rank 1 = highest revenue model in the family."
 
       - name: rank_in_region
         data_type: bigint
-        description: ""
+        description: "Revenue rank within the source region ordered by ytd_net_revenue descending. Rank 1 = highest revenue model in the region."
 
       - name: rank_overall
         data_type: bigint
-        description: ""
+        description: "Overall revenue rank across all model + region combinations ordered by ytd_net_revenue descending."
 
       - name: revenue_per_customer
         data_type: numeric
-        description: ""
+        description: "Net revenue per unique customer year-to-date. NULL if unique_customers_ytd is zero."
 
       - name: cumulative_revenue_pct
         data_type: numeric
-        description: ""
+        description: "Cumulative share of total net revenue when models are sorted by ytd_net_revenue descending. Used for Pareto / 80-20 analysis."
 
   - name: customer_revenue_weekly
-    description: ""
+    description: "Weekly revenue aggregated at customer level. One row per account_id + week_start_date. Incremental with delete+insert — lookback window is 2 weeks. Includes WoW absolute and percentage changes in gross and net revenue."
     group: finance
     columns:
       - name: account_id
         data_type: character varying
-        description: ""
+        description: "Customer account identifier. Part of the composite unique key. Foreign key to stg_customer_details."
 
       - name: company_name
         data_type: character varying
-        description: ""
+        description: "Legal company name from CRM. Joined from dim_customer."
 
       - name: segment
         data_type: character varying
-        description: ""
+        description: "{{ doc('segment_definition') }}"
 
       - name: vertical
         data_type: character varying
-        description: ""
+        description: "Industry vertical — Technology, Financial Services, Healthcare etc."
 
       - name: account_size
         data_type: character varying
-        description: ""
+        description: "Company size classification — Enterprise, Mid-Market, SMB, Unknown."
 
       - name: week_start_date
         data_type: date
-        description: ""
+        description: "First day (Monday) of the week. Part of the composite unique key."
 
       - name: week_end_date
         data_type: date
-        description: ""
+        description: "Last day (Sunday) of the week."
 
       - name: total_gross_revenue
         data_type: numeric
-        description: ""
+        description: "Total gross revenue for the customer in the week before discounts and credits."
 
       - name: total_net_revenue
         data_type: numeric
-        description: ""
+        description: "{{ doc('net_revenue_definition') }}"
 
       - name: active_days
         data_type: bigint
-        description: ""
+        description: "Number of distinct days with revenue activity in the week."
 
       - name: avg_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Average net revenue per active day in the week."
 
       - name: max_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Highest single-day net revenue in the week."
 
       - name: min_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Lowest single-day net revenue in the week."
 
       - name: prior_week_gross_revenue
         data_type: numeric
-        description: ""
+        description: "Gross revenue from the previous week. NULL for the customer's first week on record."
 
       - name: prior_week_net_revenue
         data_type: numeric
-        description: ""
+        description: "Net revenue from the previous week. NULL for the customer's first week on record."
 
       - name: wow_gross_revenue_change
         data_type: numeric
-        description: ""
+        description: "Week-over-week absolute change in gross revenue. NULL for the customer's first week on record."
 
       - name: wow_net_revenue_change
         data_type: numeric
-        description: ""
+        description: "Week-over-week absolute change in net revenue. NULL for the customer's first week on record."
 
       - name: wow_gross_revenue_pct_change
         data_type: numeric
-        description: ""
+        description: "Week-over-week percentage change in gross revenue. NULL when prior week is zero or missing."
 
       - name: wow_net_revenue_pct_change
         data_type: numeric
-        description: ""
+        description: "Week-over-week percentage change in net revenue. NULL when prior week is zero or missing."
 
   - name: customer_revenue_ytd
-    description: ""
+    description: "Year-to-date revenue aggregated at customer level. One row per account_id for the current calendar year. Static table — rebuilt on each run. Includes revenue rankings within segment, within vertical, and overall."
     group: finance
     columns:
       - name: account_id
         data_type: character varying
-        description: ""
+        description: "Customer account identifier. Foreign key to stg_customer_details."
 
       - name: company_name
         data_type: character varying
-        description: ""
+        description: "Legal company name from CRM. Joined from dim_customer."
 
       - name: segment
         data_type: character varying
-        description: ""
+        description: "{{ doc('segment_definition') }}"
 
       - name: vertical
         data_type: character varying
-        description: ""
+        description: "Industry vertical — Technology, Financial Services, Healthcare etc."
 
       - name: account_size
         data_type: character varying
-        description: ""
+        description: "Company size classification — Enterprise, Mid-Market, SMB, Unknown."
 
       - name: ytd_start_date
         data_type: date
-        description: ""
+        description: "Earliest revenue date in the current calendar year for this customer."
 
       - name: ytd_end_date
         data_type: date
-        description: ""
+        description: "Latest revenue date in the current calendar year for this customer."
 
       - name: year
         data_type: numeric
-        description: ""
+        description: "Calendar year — extracted from ytd_end_date."
 
       - name: ytd_gross_revenue
         data_type: numeric
-        description: ""
+        description: "Total gross revenue year-to-date before discounts and credits."
 
       - name: ytd_net_revenue
         data_type: numeric
-        description: ""
+        description: "Total net revenue year-to-date. {{ doc('net_revenue_definition') }}"
 
       - name: active_days
         data_type: bigint
-        description: ""
+        description: "Number of distinct days with revenue activity year-to-date."
 
       - name: avg_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Average net revenue per active day year-to-date."
 
       - name: max_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Highest single-day net revenue year-to-date."
 
       - name: min_daily_net_revenue
         data_type: numeric
-        description: ""
+        description: "Lowest single-day net revenue year-to-date."
 
       - name: active_months
         data_type: bigint
-        description: ""
+        description: "Number of distinct calendar months with revenue activity year-to-date."
 
       - name: avg_monthly_net_revenue
         data_type: numeric
-        description: ""
+        description: "Average net revenue per active month year-to-date."
 
       - name: rank_in_segment
         data_type: bigint
-        description: ""
+        description: "Revenue rank within the customer's segment ordered by ytd_net_revenue descending. Rank 1 = highest revenue customer in the segment."
 
       - name: rank_in_vertical
         data_type: bigint
-        description: ""
+        description: "Revenue rank within the customer's vertical ordered by ytd_net_revenue descending. Rank 1 = highest revenue customer in the vertical."
 
       - name: rank_overall
         data_type: bigint
-        description: ""
+        description: "Overall revenue rank across all customers ordered by ytd_net_revenue descending."
 
       - name: cumulative_revenue_pct
         data_type: numeric
-        description: ""
+        description: "Cumulative share of total net revenue when customers are sorted by ytd_net_revenue descending. Used for Pareto / 80-20 analysis."
 
 
 
@@ -647,3 +647,38 @@ models:
       - name: mom_net_revenue_pct_change
         description: "Month-over-month percentage change in net revenue. NULL when prior month is zero or missing."
         data_type: numeric
+
+
+# ---------------------------------------------------------------------------
+# Unit tests
+# ---------------------------------------------------------------------------
+# Unit tests use fixed mock data (fixtures) to validate transformation logic.
+# They run without a live database connection — dbt compiles the model SQL
+# and runs it against the fixture data in memory.
+# Run with: dbt test --select customer_revenue_weekly
+
+unit_tests:
+  - name: test_customer_revenue_weekly_wow_calculations
+    description: >
+      Validates WoW window function logic in customer_revenue_weekly.
+      Tests that prior_week values, absolute changes, and percentage
+      changes are calculated correctly across two accounts and two weeks.
+      ACC001 has two weeks of data to test WoW logic.
+      ACC002 has one week only — validates nulls on first week.
+    model: customer_revenue_weekly
+    overrides:
+      macros:
+        is_incremental: false
+        # is_incremental: false — tells dbt to run the full model logic,
+        # not the incremental filter. Unit tests always test the full
+        # transformation, never the incremental WHERE clause.
+    given:
+      - input: ref('int_revenue_daily')
+        format: csv
+        fixture: customer_revenue_weekly_int_input
+      - input: ref('dim_customer')
+        format: csv
+        fixture: customer_revenue_weekly_dim_input
+    expect:
+      format: csv
+      fixture: customer_revenue_weekly_expected

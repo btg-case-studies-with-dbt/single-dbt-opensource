@@ -8,22 +8,12 @@
     )
 }}
 
--- v1: original model — kept for backwards compatibility
--- deprecated: consumers should migrate to v2 which adds revenue_tier
--- see schema.yml for deprecation_date
-
 with daily_revenue as (
 
     select
         account_id,
-        company_name,
-        segment,
-        vertical,
-        account_size,
         revenue_date,
         total_gross_revenue,
-        1 as revenue_rank,
-        'test' as revenue_tier, -- placeholder for v2 column
         net_revenue
 
     from {{ ref('int_revenue_daily') }}
@@ -34,6 +24,38 @@ with daily_revenue as (
 
 ),
 
+dim_customer as (
+
+    select
+        account_id,
+        company_name,
+        segment,
+        vertical,
+        account_size
+
+    from {{ ref('dim_customer') }}
+
+),
+
+enriched as (
+
+    select
+        dr.account_id,
+        dc.company_name,
+        dc.segment,
+        dc.vertical,
+        dc.account_size,
+        dr.revenue_date,
+        dr.total_gross_revenue,
+        1       as revenue_rank,
+        'test'  as revenue_tier,
+        dr.net_revenue
+
+    from daily_revenue dr
+    left join dim_customer dc on dr.account_id = dc.account_id
+
+),
+
 monthly as (
 
     select
@@ -41,9 +63,11 @@ monthly as (
         company_name,
         segment,
         vertical,
-        account_size,revenue_tier,revenue_rank,
+        account_size,
+        revenue_tier,
+        revenue_rank,
         date_trunc('month', revenue_date)::date                     as month_start_date,
-        (date_trunc('month', revenue_date) 
+        (date_trunc('month', revenue_date)
             + interval '1 month' - interval '1 day')::date          as month_end_date,
         sum(total_gross_revenue)                                    as total_gross_revenue,
         sum(net_revenue)                                            as total_net_revenue,
@@ -52,10 +76,10 @@ monthly as (
         max(net_revenue)                                            as max_daily_net_revenue,
         min(net_revenue)                                            as min_daily_net_revenue
 
-    from daily_revenue
-    group by 
-        account_id, company_name, segment, vertical, account_size,revenue_tier,revenue_rank,
-        month_start_date, month_end_date
+    from enriched
+    group by
+        account_id, company_name, segment, vertical, account_size,
+        revenue_tier, revenue_rank, month_start_date, month_end_date
 
 ),
 
@@ -75,7 +99,7 @@ with_prior_month as (
         m.total_net_revenue - lag(m.total_net_revenue) over (
             partition by m.account_id order by m.month_start_date
         )                                                           as mom_net_revenue_change,
-        case 
+        case
             when lag(m.total_gross_revenue) over (
                 partition by m.account_id order by m.month_start_date
             ) > 0 then
@@ -88,7 +112,7 @@ with_prior_month as (
                 )
             else null
         end                                                         as mom_gross_revenue_pct_change,
-        case 
+        case
             when lag(m.total_net_revenue) over (
                 partition by m.account_id order by m.month_start_date
             ) > 0 then

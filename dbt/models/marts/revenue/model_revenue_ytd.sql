@@ -8,11 +8,7 @@ with daily_revenue as (
 
     select
         model_variant,
-        model_family,
-        model_publisher,
         source_region,
-        territory,
-        govcloud,
         account_id,
         revenue_date,
         total_gross_revenue,
@@ -20,6 +16,48 @@ with daily_revenue as (
 
     from {{ ref('int_revenue_daily') }}
     where extract(year from revenue_date) = extract(year from current_date)
+
+),
+
+dim_model as (
+
+    select
+        model_variant,
+        model_family,
+        model_publisher
+
+    from {{ ref('dim_model') }}
+
+),
+
+dim_region as (
+
+    select
+        source_region,
+        territory,
+        govcloud
+
+    from {{ ref('dim_region') }}
+
+),
+
+enriched as (
+
+    select
+        dr.model_variant,
+        dm.model_family,
+        dm.model_publisher,
+        dr.source_region,
+        dre.territory,
+        dre.govcloud,
+        dr.account_id,
+        dr.revenue_date,
+        dr.total_gross_revenue,
+        dr.net_revenue
+
+    from daily_revenue dr
+    left join dim_model  dm  on dr.model_variant = dm.model_variant
+    left join dim_region dre on dr.source_region  = dre.source_region
 
 ),
 
@@ -32,41 +70,27 @@ ytd as (
         source_region,
         territory,
         govcloud,
-        
-        -- YTD date range
         min(revenue_date)                                           as ytd_start_date,
         max(revenue_date)                                           as ytd_end_date,
         extract(year from max(revenue_date))                        as year,
-
-        -- Aggregated revenue
         sum(total_gross_revenue)                                    as ytd_gross_revenue,
         sum(net_revenue)                                            as ytd_net_revenue,
-        
-        -- Customer metrics
         count(distinct account_id)                                  as unique_customers_ytd,
-        
-        -- Daily metrics
         count(distinct revenue_date)                                as active_days,
         round(avg(net_revenue), 2)                                  as avg_daily_net_revenue,
         max(net_revenue)                                            as max_daily_net_revenue,
         min(net_revenue)                                            as min_daily_net_revenue,
-
-        -- Monthly metrics
         count(distinct date_trunc('month', revenue_date))           as active_months,
         round(
-            sum(net_revenue) / 
-            count(distinct date_trunc('month', revenue_date)), 
+            sum(net_revenue) /
+            count(distinct date_trunc('month', revenue_date)),
             2
         )                                                           as avg_monthly_net_revenue
 
-    from daily_revenue
-    group by 
-        model_variant,
-        model_family,
-        model_publisher,
-        source_region,
-        territory,
-        govcloud
+    from enriched
+    group by
+        model_variant, model_family, model_publisher,
+        source_region, territory, govcloud
 
 ),
 
@@ -74,31 +98,21 @@ with_rankings as (
 
     select
         y.*,
-
-        -- Rankings within model family
         rank() over (
             partition by y.model_family
             order by y.ytd_net_revenue desc
         )                                                           as rank_in_family,
-
-        -- Rankings within region
         rank() over (
             partition by y.source_region
             order by y.ytd_net_revenue desc
         )                                                           as rank_in_region,
-
-        -- Overall ranking
         rank() over (
             order by y.ytd_net_revenue desc
         )                                                           as rank_overall,
-
-        -- Revenue per customer
         round(
             y.ytd_net_revenue / nullif(y.unique_customers_ytd, 0),
             2
         )                                                           as revenue_per_customer,
-
-        -- Cumulative percentage of total revenue
         round(
             sum(y.ytd_net_revenue) over (
                 order by y.ytd_net_revenue desc
