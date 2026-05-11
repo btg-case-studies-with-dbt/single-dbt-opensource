@@ -7,23 +7,14 @@
     )
 }}
 
-with weekly as (
+with raw as (
 
     select
-        -- Model dimensions
         model_variant,
         model_type,
-        model_family,
-        model_publisher,
-        
-
-        -- Region dimensions
         source_region,
         inference_region,
         inference_scope,
-        territory,
-        
-        govcloud,
 
         -- Week dimension (Sunday to Saturday)
         date_trunc('week', minute_timestamp) - interval '1 day'   as week_start_date,
@@ -44,25 +35,66 @@ with weekly as (
 
 ),
 
+dim_model as (
+
+    select
+        model_variant,
+        model_family,
+        model_publisher
+
+    from {{ ref('dim_model') }}
+
+),
+
+dim_region as (
+
+    select
+        source_region,
+        territory,
+        govcloud
+
+    from {{ ref('dim_region') }}
+
+),
+
+enriched as (
+
+    select
+        r.model_variant,
+        dm.model_family,
+        dm.model_publisher,
+        r.model_type,
+        r.source_region,
+        r.inference_region,
+        r.inference_scope,
+        dre.territory,
+        dre.govcloud,
+        r.week_start_date,
+        r.week_end_date,
+        r.request_count,
+        r.total_tokens,
+        r.input_tokens,
+        r.output_tokens,
+        r.error_count
+
+    from raw r
+    left join dim_model  dm  on r.model_variant = dm.model_variant
+    left join dim_region dre on r.source_region  = dre.source_region
+
+),
+
 aggregated as (
 
     select
-        -- Model dimensions
         model_variant,
         model_type,
         model_family,
         model_publisher,
-        
-
-        -- Region dimensions
         source_region,
         inference_region,
         inference_scope,
         territory,
-        
         govcloud,
-
-        -- Week dimension
         week_start_date,
         week_end_date,
 
@@ -96,11 +128,11 @@ aggregated as (
             2
         )                                                   as error_rate_pct
 
-    from weekly
+    from enriched
     group by
-        model_variant, model_type, model_family, model_publisher, 
+        model_variant, model_type, model_family, model_publisher,
         source_region, inference_region, inference_scope,
-        territory,  govcloud,
+        territory, govcloud,
         week_start_date, week_end_date
 
 ),

@@ -1,0 +1,4 @@
+account_id,company_name,segment,vertical,account_size,week_start_date,week_end_date,total_gross_revenue,total_net_revenue,active_days,avg_daily_net_revenue,max_daily_net_revenue,min_daily_net_revenue,prior_week_gross_revenue,prior_week_net_revenue,wow_gross_revenue_change,wow_net_revenue_change,wow_gross_revenue_pct_change,wow_net_revenue_pct_change
+ACC001,Acme Corp,Strategic,Technology,Large,2024-01-01,2024-01-07,1000.00,900.00,2,450.00,540.00,360.00,,,,,
+ACC001,Acme Corp,Strategic,Technology,Large,2024-01-08,2024-01-14,1200.00,1080.00,2,540.00,630.00,450.00,1000.00,900.00,200.00,180.00,20.00,20.00
+ACC002,Beta Inc,Commercial,Finance,Medium,2024-01-01,2024-01-07,300.00,270.00,1,270.00,270.00,270.00,,,,,

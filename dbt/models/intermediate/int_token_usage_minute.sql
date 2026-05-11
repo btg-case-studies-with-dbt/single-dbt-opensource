@@ -69,58 +69,16 @@ combined as (
 
 ),
 
-customer as (
-
-    select
-        account_id,
-        company_name,
-        segment,
-        vertical,
-        account_size
-    from {{ ref('stg_customer_details') }}
-
-),
-
-model_config as (
-
-    select
-        model_variant,
-        model_family,
-        model_publisher
-    from {{ ref('stg_config_model_dimensions') }}
-
-),
-
-region_mapping as (
-
-    select
-        source_region,
-        territory,
-        govcloud
-    from {{ ref('region_mapping') }}
-
-),
-
 aggregated as (
 
     select
         c.account_id,
-        coalesce(cu.company_name, 'Unknown')    as company_name,
-        coalesce(cu.segment, 'Unknown')         as segment,
-        coalesce(cu.vertical, 'Unknown')        as vertical,
-        coalesce(cu.account_size, 'Unknown')    as account_size,
         c.model_variant,
         c.model_type,
-        md.model_family,
-        md.model_publisher,
-      
         c.source_region,
         c.inference_region,
         c.inference_scope,
         c.traffic_type,
-        rm.territory,
-        rm.govcloud,
-
         c.minute_timestamp,
         c.event_date,
 
@@ -141,26 +99,15 @@ aggregated as (
         max(c.loaded_at)                                    as loaded_at
 
     from combined c
-    left join customer     cu on c.account_id    = cu.account_id
-    left join model_config md on c.model_variant = md.model_variant
-    left join region_mapping rm on c.source_region = rm.source_region
 
     group by
         c.account_id,
-        cu.company_name,
-        cu.segment,
-        cu.vertical,
-        cu.account_size,
         c.model_variant,
         c.model_type,
-        md.model_family,
-        md.model_publisher,
         c.source_region,
         c.inference_region,
         c.inference_scope,
         c.traffic_type,
-        rm.territory,
-        rm.govcloud,
         c.minute_timestamp,
         c.event_date
 

@@ -7,19 +7,16 @@
     )
 }}
 
-with weekly as (
+with raw as (
 
     select
-        -- Customer dimensions
-        account_id, company_name, segment,
-        vertical, account_size,
-
-        -- Model dimensions
-        model_variant, model_type, model_family, model_publisher, 
-
-        -- Region dimensions
-        source_region, inference_region, inference_scope, traffic_type,
-        territory,  govcloud,
+        account_id,
+        model_variant,
+        model_type,
+        source_region,
+        inference_region,
+        inference_scope,
+        traffic_type,
 
         -- Week dimension (Sunday to Saturday)
         date_trunc('week', minute_timestamp) - interval '1 day'   as week_start_date,
@@ -40,21 +37,82 @@ with weekly as (
 
 ),
 
+dim_customer as (
+
+    select
+        account_id,
+        company_name,
+        segment,
+        vertical,
+        account_size
+
+    from {{ ref('dim_customer') }}
+
+),
+
+dim_model as (
+
+    select
+        model_variant,
+        model_family,
+        model_publisher
+
+    from {{ ref('dim_model') }}
+
+),
+
+dim_region as (
+
+    select
+        source_region,
+        territory,
+        govcloud
+
+    from {{ ref('dim_region') }}
+
+),
+
+enriched as (
+
+    select
+        r.account_id,
+        dc.company_name,
+        dc.segment,
+        dc.vertical,
+        dc.account_size,
+        r.model_variant,
+        dm.model_family,
+        dm.model_publisher,
+        r.model_type,
+        r.source_region,
+        r.inference_region,
+        r.inference_scope,
+        r.traffic_type,
+        dre.territory,
+        dre.govcloud,
+        r.week_start_date,
+        r.week_end_date,
+        r.request_count,
+        r.total_tokens,
+        r.input_tokens,
+        r.output_tokens,
+        r.error_count
+
+    from raw r
+    left join dim_customer dc  on r.account_id    = dc.account_id
+    left join dim_model    dm  on r.model_variant = dm.model_variant
+    left join dim_region   dre on r.source_region  = dre.source_region
+
+),
+
 aggregated as (
 
     select
-        -- Customer dimensions
         account_id, company_name, segment,
         vertical, account_size,
-
-        -- Model dimensions
-        model_variant, model_type, model_family, model_publisher, 
-
-        -- Region dimensions
+        model_variant, model_type, model_family, model_publisher,
         source_region, inference_region, inference_scope, traffic_type,
-        territory,  govcloud,
-
-        -- Week dimension
+        territory, govcloud,
         week_start_date,
         week_end_date,
 
@@ -94,13 +152,13 @@ aggregated as (
         round(sum(error_count)::numeric
             / nullif(sum(request_count), 0) * 100, 2)       as error_rate_pct
 
-    from weekly
+    from enriched
     group by
         account_id, company_name, segment,
         vertical, account_size,
-        model_variant, model_type, model_family, model_publisher, 
+        model_variant, model_type, model_family, model_publisher,
         source_region, inference_region, inference_scope, traffic_type,
-        territory,  govcloud,
+        territory, govcloud,
         week_start_date, week_end_date
 
 ),

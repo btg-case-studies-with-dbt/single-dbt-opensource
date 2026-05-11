@@ -1,0 +1,134 @@
+version: 2
+
+models:
+
+  # ============================================================================
+  # customer_quota_weekly_history
+  # ============================================================================
+  - name: customer_quota_weekly_history
+    description: >
+      Gapless weekly history of each customer's quota position per model, inference scope,
+      and source region. One row per (account_id, model_variant, inference_scope,
+      source_region, week_start_date) starting from the earliest week the customer either
+      used the model or submitted a quota request.
+      Effective limits are carried forward week-over-week — an approved limit set in
+      January remains visible in February rows until superseded. Pending requests are
+      flagged on every week they were open. Weeks with no usage still appear with 0
+      actuals, preserving the full limit and pending history.
+    columns:
+
+      # -- Identity --
+      - name: account_id
+        description: "Customer account identifier."
+        tests:
+          - not_null
+
+      - name: model_variant
+        description: "Model variant identifier."
+        tests:
+          - not_null
+
+      - name: inference_scope
+        description: "Inference scope: global, regional, or multi-region."
+        tests:
+          - not_null
+
+      - name: source_region
+        description: "AWS source region."
+        tests:
+          - not_null
+
+      # -- Time --
+      - name: week_start_date
+        description: "Sunday that starts the week."
+        tests:
+          - not_null
+
+      - name: week_end_date
+        description: "Saturday that ends the week."
+        tests:
+          - not_null
+
+      # -- Effective limits --
+      - name: effective_rpm
+        description: "Requests per minute limit in effect — approved (carried forward) if set, system default otherwise."
+
+      - name: effective_tpm
+        description: "Tokens per minute limit in effect — approved (carried forward) if set, system default otherwise."
+
+      - name: effective_tpd
+        description: "Tokens per day limit in effect — approved (carried forward) if set, system default otherwise."
+
+      - name: is_using_default
+        description: "True when the customer has no approved adjustment and is running on the system default limit."
+        tests:
+          - not_null
+
+      # -- Approved adjustment (null when on default) --
+      - name: adjusted_rpm
+        description: "Approved RPM carried forward to this week. NULL when using system default."
+
+      - name: adjusted_tpm
+        description: "Approved TPM carried forward to this week. NULL when using system default."
+
+      - name: adjusted_tpd
+        description: "Approved TPD carried forward to this week. NULL when using system default."
+
+      # -- System defaults (reference) --
+      - name: default_rpm
+        description: "System default RPM for this model + scope + region."
+
+      - name: default_tpm
+        description: "System default TPM for this model + scope + region."
+
+      - name: default_tpd
+        description: "System default TPD for this model + scope + region."
+
+      # -- Actual usage --
+      - name: actual_requests
+        description: "Total requests in the week. 0 for weeks with no activity."
+        tests:
+          - not_null
+
+      - name: actual_total_tokens
+        description: "Total tokens consumed in the week. 0 for weeks with no activity."
+        tests:
+          - not_null
+
+      - name: actual_input_tokens
+        description: "Total input tokens in the week. 0 for inactive weeks."
+        tests:
+          - not_null
+
+      - name: actual_output_tokens
+        description: "Total output tokens in the week. 0 for inactive weeks."
+        tests:
+          - not_null
+
+      - name: actual_peak_rpm
+        description: "Peak requests per minute in any single minute during the week. NULL for inactive weeks."
+
+      - name: actual_peak_tpm
+        description: "Peak tokens per minute in any single minute during the week. NULL for inactive weeks."
+
+      # -- Utilization --
+      - name: peak_rpm_utilization_pct
+        description: "actual_peak_rpm as a percentage of effective_rpm. NULL when no activity or limit is zero."
+
+      - name: peak_tpm_utilization_pct
+        description: "actual_peak_tpm as a percentage of effective_tpm. NULL when no activity or limit is zero."
+
+      # -- Pending request state --
+      - name: has_pending_request
+        description: "True when at least one quota request was in pending state during this specific week."
+        tests:
+          - not_null
+
+      - name: pending_requested_rpm
+        description: "Highest RPM requested across all pending requests active this week. NULL if no pending request."
+
+      - name: pending_requested_tpm
+        description: "Highest TPM requested across all pending requests active this week. NULL if no pending request."
+
+      - name: pending_requested_tpd
+        description: "Highest TPD requested across all pending requests active this week. NULL if no pending request."

@@ -8,35 +8,126 @@ groups:
 models:
 
   # ============================================================================
+  # int_quota_first_activity
+  # ============================================================================
+  - name: int_quota_first_activity
+    description: "Earliest week a customer interacted with a model + region, anchored from BOTH int_token_usage_minute AND stg_quota_customer_rate_limit_requests. A customer who submitted a quota request before any usage still gets a spine starting that week."
+    columns:
+      - name: account_id
+        description: "Customer account identifier"
+        tests:
+          - not_null
+      - name: model_variant
+        description: "Model variant identifier"
+        tests:
+          - not_null
+      - name: inference_scope
+        description: "global, regional, or multi-region"
+        tests:
+          - not_null
+      - name: source_region
+        description: "AWS source region"
+        tests:
+          - not_null
+      - name: first_week_start_date
+        description: "Sunday of the earliest week this account had usage or a quota request for this model + scope + region"
+        tests:
+          - not_null
+
+  # ============================================================================
+  # int_quota_weekly_spine
+  # ============================================================================
+  - name: int_quota_weekly_spine
+    description: "Complete weekly time series per (account_id, model_variant, inference_scope, source_region) from first_week_start_date through the current week. One row per combo per week. Used as the backbone for quota tracking — ensures customers have rows even for weeks with no activity."
+    columns:
+      - name: account_id
+        tests:
+          - not_null
+      - name: model_variant
+        tests:
+          - not_null
+      - name: inference_scope
+        tests:
+          - not_null
+      - name: source_region
+        tests:
+          - not_null
+      - name: week_start_date
+        description: "Sunday that starts the week"
+        tests:
+          - not_null
+      - name: week_end_date
+        description: "Saturday that ends the week"
+        tests:
+          - not_null
+
+  # ============================================================================
+  # int_quota_history_resolved
+  # ============================================================================
+  - name: int_quota_history_resolved
+    description: "Resolves the effective rate limit AND pending request state for every week in the spine. Approved limits are carried forward week-over-week using island-counting window functions — a limit set in January is visible through February until a March limit supersedes it. Pending requests are flagged for every week they were open, not just the week they were submitted."
+    columns:
+      - name: account_id
+        tests:
+          - not_null
+      - name: model_variant
+        tests:
+          - not_null
+      - name: inference_scope
+        tests:
+          - not_null
+      - name: source_region
+        tests:
+          - not_null
+      - name: week_start_date
+        tests:
+          - not_null
+      - name: week_end_date
+        tests:
+          - not_null
+      - name: effective_rpm
+        description: "RPM limit in effect: approved (carried forward) if exists, default otherwise"
+      - name: effective_tpm
+        description: "TPM limit in effect: approved (carried forward) if exists, default otherwise"
+      - name: effective_tpd
+        description: "TPD limit in effect: approved (carried forward) if exists, default otherwise"
+      - name: is_using_default
+        description: "True when no approved adjustment has been made yet for this week"
+        tests:
+          - not_null
+      - name: adjusted_rpm
+        description: "Approved RPM carried forward. NULL when on default."
+      - name: adjusted_tpm
+        description: "Approved TPM carried forward. NULL when on default."
+      - name: adjusted_tpd
+        description: "Approved TPD carried forward. NULL when on default."
+      - name: default_rpm
+        description: "System default RPM for this model + scope + region"
+      - name: default_tpm
+        description: "System default TPM for this model + scope + region"
+      - name: default_tpd
+        description: "System default TPD for this model + scope + region"
+      - name: has_pending_request
+        description: "True when at least one quota request was in pending state during this specific week"
+        tests:
+          - not_null
+      - name: pending_requested_rpm
+        description: "Highest RPM value requested across all pending requests active this week"
+      - name: pending_requested_tpm
+        description: "Highest TPM value requested across all pending requests active this week"
+      - name: pending_requested_tpd
+        description: "Highest TPD value requested across all pending requests active this week"
+
+  # ============================================================================
   # int_token_usage_minute
   # ============================================================================
   - name: int_token_usage_minute
     description: "Minute-level token usage combining proprietary and open source inference. Union of stg_token_usage_proprietary and stg_token_usage_open_source enriched with customer, model, and region dimensions. One row per account, model, region, and minute."
     columns:
 
-      # -- Customer dimensions (names updated to match stg_customer_details) --
+      # -- Customer foreign key --
       - name: account_id
         description: "Customer account identifier"
-        tests:
-          - not_null
-
-      - name: company_name
-        description: "Company name from customer_details"
-        tests:
-          - not_null
-
-      - name: segment
-        description: "Account segment: Strategic, Commercial"
-        tests:
-          - not_null
-
-      - name: vertical
-        description: "Industry vertical: FinTech, SaaS, HealthTech, etc."
-        tests:
-          - not_null
-
-      - name: account_size
-        description: "Account size: Enterprise, Mid-Market, SMB"
         tests:
           - not_null
 
@@ -53,12 +144,6 @@ models:
           - accepted_values:
               arguments:
                 values: ['proprietary', 'open_source']
-
-      - name: model_family
-        description: "Model family from config_model_dimensions"
-
-      - name: model_publisher
-        description: "Model publisher from config_model_dimensions"
 
       # -- Region dimensions --
       - name: source_region
@@ -78,12 +163,6 @@ models:
 
       - name: traffic_type
         description: "Type of traffic: standard, batch, etc."
-
-      - name: territory
-        description: "AWS territory from region_mapping seed"
-
-      - name: govcloud
-        description: "True if this is an AWS GovCloud region"
 
       # -- Time grain --
       - name: minute_timestamp
