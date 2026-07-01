@@ -1,0 +1,412 @@
+semantic_models:
+
+  - name: customer_revenue_weekly
+    description: "Weekly revenue aggregated at customer level."
+    model: ref('customer_revenue_weekly')
+    defaults:
+      agg_time_dimension: week_start_date
+    entities:
+      - name: account_id
+        type: primary
+    dimensions:
+      - name: week_start_date
+        type: time
+        type_params:
+          time_granularity: week
+      - name: segment
+        type: categorical
+      - name: vertical
+        type: categorical
+      - name: account_size
+        type: categorical
+      - name: company_name
+        type: categorical
+    measures:
+      - name: total_net_revenue
+        agg: sum
+        create_metric: false
+      - name: total_gross_revenue
+        agg: sum
+        create_metric: false
+      - name: active_days
+        agg: sum
+        create_metric: false
+      - name: wow_net_revenue_pct_change
+        agg: sum
+        create_metric: false
+      - name: wow_gross_revenue_pct_change
+        agg: sum
+        create_metric: false
+      - name: weekly_avg_daily_net_revenue
+        expr: avg_daily_net_revenue
+        agg: sum
+        create_metric: false
+      - name: cust_weekly_max_daily_net_revenue
+        expr: max_daily_net_revenue
+        agg: max
+        create_metric: false
+      - name: cust_weekly_min_daily_net_revenue
+        expr: min_daily_net_revenue
+        agg: min
+        create_metric: false
+      - name: cust_weekly_prior_week_gross_revenue
+        expr: prior_week_gross_revenue
+        agg: sum
+        create_metric: false
+      - name: cust_weekly_prior_week_net_revenue
+        expr: prior_week_net_revenue
+        agg: sum
+        create_metric: false
+      - name: cust_weekly_wow_gross_revenue_change
+        expr: wow_gross_revenue_change
+        agg: sum
+        create_metric: false
+      - name: cust_weekly_wow_net_revenue_change
+        expr: wow_net_revenue_change
+        agg: sum
+        create_metric: false
+
+  - name: customer_revenue_monthly
+    description: "Monthly revenue aggregated at customer level."
+    model: ref('customer_revenue_monthly')
+    defaults:
+      agg_time_dimension: month_start_date
+    entities:
+      - name: account_id
+        type: primary
+    dimensions:
+      - name: month_start_date
+        type: time
+        type_params:
+          time_granularity: month
+    measures:
+      - name: mom_net_revenue_pct_change
+        agg: sum
+        create_metric: false
+      - name: mom_gross_revenue_pct_change
+        agg: sum
+        create_metric: false
+      - name: monthly_avg_daily_net_revenue
+        expr: avg_daily_net_revenue
+        agg: sum
+        create_metric: false
+      - name: cust_monthly_total_gross_revenue
+        expr: total_gross_revenue
+        agg: sum
+        create_metric: false
+      - name: cust_monthly_total_net_revenue
+        expr: total_net_revenue
+        agg: sum
+        create_metric: false
+      - name: cust_monthly_active_days
+        expr: active_days
+        agg: sum
+        create_metric: false
+      - name: cust_monthly_max_daily_net_revenue
+        expr: max_daily_net_revenue
+        agg: max
+        create_metric: false
+      - name: cust_monthly_min_daily_net_revenue
+        expr: min_daily_net_revenue
+        agg: min
+        create_metric: false
+      - name: cust_monthly_prior_month_gross_revenue
+        expr: prior_month_gross_revenue
+        agg: sum
+        create_metric: false
+      - name: cust_monthly_prior_month_net_revenue
+        expr: prior_month_net_revenue
+        agg: sum
+        create_metric: false
+      - name: cust_monthly_mom_gross_revenue_change
+        expr: mom_gross_revenue_change
+        agg: sum
+        create_metric: false
+      - name: cust_monthly_mom_net_revenue_change
+        expr: mom_net_revenue_change
+        agg: sum
+        create_metric: false
+
+  - name: model_revenue_weekly
+    description: "Weekly revenue aggregated at model variant + source region level."
+    model: ref('model_revenue_weekly')
+    defaults:
+      agg_time_dimension: week_start_date
+    entities:
+      - name: model_variant
+        type: primary
+    dimensions:
+      - name: week_start_date
+        type: time
+        type_params:
+          time_granularity: week
+      - name: model_family
+        type: categorical
+      - name: model_publisher
+        type: categorical
+      - name: source_region
+        type: categorical
+      - name: territory
+        type: categorical
+    measures:
+      - name: model_total_net_revenue
+        expr: total_net_revenue
+        agg: sum
+        create_metric: false
+      - name: model_total_gross_revenue
+        expr: total_gross_revenue
+        agg: sum
+        create_metric: false
+      - name: unique_customers
+        agg: sum
+        create_metric: false
+      - name: model_active_days
+        expr: active_days
+        agg: sum
+        create_metric: false
+      - name: model_weekly_avg_daily_net_revenue
+        expr: avg_daily_net_revenue
+        agg: average
+        create_metric: false
+      - name: model_weekly_max_daily_net_revenue
+        expr: max_daily_net_revenue
+        agg: max
+        create_metric: false
+      - name: model_weekly_prior_week_gross_revenue
+        expr: prior_week_gross_revenue
+        agg: sum
+        create_metric: false
+      - name: model_weekly_prior_week_net_revenue
+        expr: prior_week_net_revenue
+        agg: sum
+        create_metric: false
+      - name: model_weekly_prior_week_unique_customers
+        expr: prior_week_unique_customers
+        agg: sum
+        create_metric: false
+      - name: model_weekly_wow_gross_revenue_change
+        expr: wow_gross_revenue_change
+        agg: sum
+        create_metric: false
+      - name: model_weekly_wow_net_revenue_change
+        expr: wow_net_revenue_change
+        agg: sum
+        create_metric: false
+      - name: model_weekly_wow_customer_change
+        expr: wow_customer_change
+        agg: sum
+        create_metric: false
+      - name: model_weekly_wow_gross_revenue_pct_change
+        expr: wow_gross_revenue_pct_change
+        agg: sum
+        create_metric: false
+      - name: model_weekly_wow_net_revenue_pct_change
+        expr: wow_net_revenue_pct_change
+        agg: sum
+        create_metric: false
+
+  - name: model_revenue_monthly
+    description: "Monthly revenue aggregated at model variant + source region level."
+    model: ref('model_revenue_monthly')
+    defaults:
+      agg_time_dimension: month_start_date
+    entities:
+      - name: model_variant
+        type: primary
+    dimensions:
+      - name: month_start_date
+        type: time
+        type_params:
+          time_granularity: month
+    measures:
+      - name: model_monthly_unique_customers
+        expr: unique_customers
+        agg: sum
+        create_metric: false
+      - name: model_monthly_total_gross_revenue
+        expr: total_gross_revenue
+        agg: sum
+        create_metric: false
+      - name: model_monthly_total_net_revenue
+        expr: total_net_revenue
+        agg: sum
+        create_metric: false
+      - name: model_monthly_active_days
+        expr: active_days
+        agg: sum
+        create_metric: false
+      - name: model_monthly_avg_daily_net_revenue
+        expr: avg_daily_net_revenue
+        agg: average
+        create_metric: false
+      - name: model_monthly_max_daily_net_revenue
+        expr: max_daily_net_revenue
+        agg: max
+        create_metric: false
+      - name: model_monthly_prior_month_gross_revenue
+        expr: prior_month_gross_revenue
+        agg: sum
+        create_metric: false
+      - name: model_monthly_prior_month_net_revenue
+        expr: prior_month_net_revenue
+        agg: sum
+        create_metric: false
+      - name: model_monthly_prior_month_unique_customers
+        expr: prior_month_unique_customers
+        agg: sum
+        create_metric: false
+      - name: model_monthly_mom_gross_revenue_change
+        expr: mom_gross_revenue_change
+        agg: sum
+        create_metric: false
+      - name: model_monthly_mom_net_revenue_change
+        expr: mom_net_revenue_change
+        agg: sum
+        create_metric: false
+      - name: model_monthly_mom_customer_change
+        expr: mom_customer_change
+        agg: sum
+        create_metric: false
+      - name: model_monthly_mom_gross_revenue_pct_change
+        expr: mom_gross_revenue_pct_change
+        agg: sum
+        create_metric: false
+      - name: model_monthly_mom_net_revenue_pct_change
+        expr: mom_net_revenue_pct_change
+        agg: sum
+        create_metric: false
+
+  - name: customer_revenue_ytd
+    description: "Year-to-date revenue aggregated at customer level."
+    model: ref('customer_revenue_ytd')
+    defaults:
+      agg_time_dimension: ytd_start_date
+    entities:
+      - name: account_id
+        type: primary
+    dimensions:
+      - name: calendar_year
+        expr: year
+        type: categorical
+      - name: ytd_start_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: ytd_segment
+        expr: segment
+        type: categorical
+      - name: ytd_vertical
+        expr: vertical
+        type: categorical
+      - name: ytd_account_size
+        expr: account_size
+        type: categorical
+      - name: ytd_company_name
+        expr: company_name
+        type: categorical
+    measures:
+      - name: cust_ytd_gross_revenue
+        expr: ytd_gross_revenue
+        agg: sum
+        create_metric: false
+      - name: cust_ytd_net_revenue
+        expr: ytd_net_revenue
+        agg: sum
+        create_metric: false
+      - name: cust_ytd_active_days
+        expr: active_days
+        agg: sum
+        create_metric: false
+      - name: cust_ytd_avg_daily_net_revenue
+        expr: avg_daily_net_revenue
+        agg: average
+        create_metric: false
+      - name: cust_ytd_max_daily_net_revenue
+        expr: max_daily_net_revenue
+        agg: max
+        create_metric: false
+      - name: cust_ytd_min_daily_net_revenue
+        expr: min_daily_net_revenue
+        agg: min
+        create_metric: false
+      - name: cust_ytd_active_months
+        expr: active_months
+        agg: sum
+        create_metric: false
+      - name: cust_ytd_avg_monthly_net_revenue
+        expr: avg_monthly_net_revenue
+        agg: average
+        create_metric: false
+
+  - name: model_revenue_ytd
+    description: "Year-to-date revenue aggregated at model variant + source region level."
+    model: ref('model_revenue_ytd')
+    defaults:
+      agg_time_dimension: ytd_start_date
+    entities:
+      - name: model_variant
+        type: primary
+    dimensions:
+      - name: calendar_year
+        expr: year
+        type: categorical
+      - name: ytd_start_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: ytd_model_family
+        expr: model_family
+        type: categorical
+      - name: ytd_model_publisher
+        expr: model_publisher
+        type: categorical
+      - name: ytd_source_region
+        expr: source_region
+        type: categorical
+      - name: ytd_territory
+        expr: territory
+        type: categorical
+      - name: ytd_govcloud
+        expr: govcloud
+        type: categorical
+    measures:
+      - name: model_ytd_gross_revenue
+        expr: ytd_gross_revenue
+        agg: sum
+        create_metric: false
+      - name: model_ytd_net_revenue
+        expr: ytd_net_revenue
+        agg: sum
+        create_metric: false
+      - name: model_ytd_unique_customers
+        expr: unique_customers_ytd
+        agg: sum
+        create_metric: false
+      - name: model_ytd_active_days
+        expr: active_days
+        agg: sum
+        create_metric: false
+      - name: model_ytd_avg_daily_net_revenue
+        expr: avg_daily_net_revenue
+        agg: average
+        create_metric: false
+      - name: model_ytd_max_daily_net_revenue
+        expr: max_daily_net_revenue
+        agg: max
+        create_metric: false
+      - name: model_ytd_min_daily_net_revenue
+        expr: min_daily_net_revenue
+        agg: min
+        create_metric: false
+      - name: model_ytd_active_months
+        expr: active_months
+        agg: sum
+        create_metric: false
+      - name: model_ytd_avg_monthly_net_revenue
+        expr: avg_monthly_net_revenue
+        agg: average
+        create_metric: false
+      - name: model_ytd_revenue_per_customer
+        expr: revenue_per_customer
+        agg: average
+        create_metric: false

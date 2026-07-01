@@ -1,0 +1,359 @@
+semantic_models:
+
+  - name: token_usage_customer_monthly
+    description: "Monthly token usage at customer + model + region level."
+    model: ref('token_usage_customer_monthly')
+    defaults:
+      agg_time_dimension: tu_month_start_date
+    entities:
+      - name: account_id
+        type: primary
+      - name: model_variant
+        type: foreign
+    dimensions:
+      - name: tu_month_start_date
+        expr: month_start_date
+        type: time
+        type_params:
+          time_granularity: month
+      - name: model_type
+        type: categorical
+    measures:
+      - name: total_tokens
+        agg: sum
+        create_metric: false
+      - name: total_requests
+        agg: sum
+        create_metric: false
+      - name: total_input_tokens
+        agg: sum
+        create_metric: false
+      - name: total_output_tokens
+        agg: sum
+        create_metric: false
+      - name: error_rate_pct
+        agg: average
+        create_metric: false
+      - name: active_minutes
+        agg: sum
+        create_metric: false
+      - name: mean_rpm_active
+        agg: average
+        create_metric: false
+      - name: peak_rpm
+        agg: max
+        create_metric: false
+      - name: mean_tpm_active
+        agg: average
+        create_metric: false
+      - name: peak_tpm
+        agg: max
+        create_metric: false
+      - name: cust_monthly_total_possible_minutes
+        expr: total_possible_minutes
+        agg: max
+        create_metric: false
+      - name: cust_monthly_active_minute_pct
+        expr: active_minute_pct
+        agg: average
+        create_metric: false
+      - name: cust_monthly_mean_rpm_all_minutes
+        expr: mean_rpm_all_minutes
+        agg: average
+        create_metric: false
+      - name: cust_monthly_mean_tpm_all_minutes
+        expr: mean_tpm_all_minutes
+        agg: average
+        create_metric: false
+      - name: cust_monthly_p90_rpm
+        expr: p90_rpm
+        agg: average
+        create_metric: false
+      - name: cust_monthly_p95_rpm
+        expr: p95_rpm
+        agg: average
+        create_metric: false
+      - name: cust_monthly_p97_rpm
+        expr: p97_rpm
+        agg: average
+        create_metric: false
+      - name: cust_monthly_p90_tpm
+        expr: p90_tpm
+        agg: average
+        create_metric: false
+      - name: cust_monthly_p95_tpm
+        expr: p95_tpm
+        agg: average
+        create_metric: false
+      - name: cust_monthly_p97_tpm
+        expr: p97_tpm
+        agg: average
+        create_metric: false
+      - name: cust_monthly_mom_mean_rpm_active
+        expr: mom_mean_rpm_active
+        agg: average
+        create_metric: false
+      - name: cust_monthly_mom_mean_tpm_active
+        expr: mom_mean_tpm_active
+        agg: average
+        create_metric: false
+      - name: cust_monthly_mom_total_tokens
+        expr: mom_total_tokens
+        agg: sum
+        create_metric: false
+      - name: cust_monthly_mom_total_requests
+        expr: mom_total_requests
+        agg: sum
+        create_metric: false
+      - name: cust_monthly_mom_active_minutes
+        expr: mom_active_minutes
+        agg: sum
+        create_metric: false
+
+  - name: token_usage_customer_weekly
+    description: "Weekly token usage at customer + model + region level."
+    model: ref('token_usage_customer_weekly')
+    defaults:
+      agg_time_dimension: tu_week_start_date
+    entities:
+      - name: account_id
+        type: primary
+      - name: model_variant
+        type: foreign
+    dimensions:
+      - name: tu_week_start_date
+        expr: week_start_date
+        type: time
+        type_params:
+          time_granularity: week
+    measures:
+      - name: cust_weekly_total_tokens
+        expr: total_tokens
+        agg: sum
+        create_metric: false
+      - name: cust_weekly_total_requests
+        expr: total_requests
+        agg: sum
+        create_metric: false
+      - name: cust_weekly_total_input_tokens
+        expr: total_input_tokens
+        agg: sum
+        create_metric: false
+      - name: cust_weekly_total_output_tokens
+        expr: total_output_tokens
+        agg: sum
+        create_metric: false
+      - name: cust_weekly_error_rate_pct
+        expr: error_rate_pct
+        agg: average
+        create_metric: false
+      - name: cust_weekly_active_minutes
+        expr: active_minutes
+        agg: sum
+        create_metric: false
+      - name: cust_weekly_mean_rpm_active
+        expr: mean_rpm_active
+        agg: average
+        create_metric: false
+      - name: cust_weekly_peak_rpm
+        expr: peak_rpm
+        agg: max
+        create_metric: false
+      - name: cust_weekly_mean_tpm_active
+        expr: mean_tpm_active
+        agg: average
+        create_metric: false
+      - name: cust_weekly_peak_tpm
+        expr: peak_tpm
+        agg: max
+        create_metric: false
+      - name: cust_weekly_total_possible_minutes
+        expr: total_possible_minutes
+        agg: max
+        create_metric: false
+      - name: cust_weekly_active_minute_pct
+        expr: active_minute_pct
+        agg: average
+        create_metric: false
+      - name: cust_weekly_mean_rpm_all_minutes
+        expr: mean_rpm_all_minutes
+        agg: average
+        create_metric: false
+      - name: cust_weekly_mean_tpm_all_minutes
+        expr: mean_tpm_all_minutes
+        agg: average
+        create_metric: false
+      - name: cust_weekly_p90_rpm
+        expr: p90_rpm
+        agg: average
+        create_metric: false
+      - name: cust_weekly_p95_rpm
+        expr: p95_rpm
+        agg: average
+        create_metric: false
+      - name: cust_weekly_p97_rpm
+        expr: p97_rpm
+        agg: average
+        create_metric: false
+      - name: cust_weekly_p90_tpm
+        expr: p90_tpm
+        agg: average
+        create_metric: false
+      - name: cust_weekly_p95_tpm
+        expr: p95_tpm
+        agg: average
+        create_metric: false
+      - name: cust_weekly_p97_tpm
+        expr: p97_tpm
+        agg: average
+        create_metric: false
+      - name: cust_weekly_wow_mean_rpm_active
+        expr: wow_mean_rpm_active
+        agg: average
+        create_metric: false
+      - name: cust_weekly_wow_mean_tpm_active
+        expr: wow_mean_tpm_active
+        agg: average
+        create_metric: false
+      - name: cust_weekly_wow_total_tokens
+        expr: wow_total_tokens
+        agg: sum
+        create_metric: false
+      - name: cust_weekly_wow_total_requests
+        expr: wow_total_requests
+        agg: sum
+        create_metric: false
+      - name: cust_weekly_wow_active_minutes
+        expr: wow_active_minutes
+        agg: sum
+        create_metric: false
+
+  - name: token_usage_model_monthly
+    description: "Monthly token usage at model + region level."
+    model: ref('token_usage_model_monthly')
+    defaults:
+      agg_time_dimension: tu_month_start_date
+    entities:
+      - name: model_variant
+        type: primary
+    dimensions:
+      - name: tu_month_start_date
+        expr: month_start_date
+        type: time
+        type_params:
+          time_granularity: month
+      - name: model_type
+        type: categorical
+    measures:
+      - name: model_monthly_total_tokens
+        expr: total_tokens
+        agg: sum
+        create_metric: false
+      - name: model_monthly_total_requests
+        expr: total_requests
+        agg: sum
+        create_metric: false
+      - name: model_monthly_mean_rpm
+        expr: mean_rpm
+        agg: average
+        create_metric: false
+      - name: model_monthly_peak_rpm
+        expr: peak_rpm
+        agg: max
+        create_metric: false
+      - name: model_monthly_mean_tpm
+        expr: mean_tpm
+        agg: average
+        create_metric: false
+      - name: model_monthly_peak_tpm
+        expr: peak_tpm
+        agg: max
+        create_metric: false
+      - name: model_monthly_error_rate_pct
+        expr: error_rate_pct
+        agg: average
+        create_metric: false
+      - name: model_monthly_mom_mean_rpm
+        expr: mom_mean_rpm
+        agg: average
+        create_metric: false
+      - name: model_monthly_mom_mean_tpm
+        expr: mom_mean_tpm
+        agg: average
+        create_metric: false
+      - name: model_monthly_mom_total_tokens
+        expr: mom_total_tokens
+        agg: sum
+        create_metric: false
+      - name: model_monthly_mom_total_requests
+        expr: mom_total_requests
+        agg: sum
+        create_metric: false
+
+  - name: token_usage_model_weekly
+    description: "Weekly token usage at model + region level."
+    model: ref('token_usage_model_weekly')
+    defaults:
+      agg_time_dimension: tu_week_start_date
+    entities:
+      - name: model_variant
+        type: primary
+    dimensions:
+      - name: tu_week_start_date
+        expr: week_start_date
+        type: time
+        type_params:
+          time_granularity: week
+    measures:
+      - name: model_weekly_total_tokens
+        expr: total_tokens
+        agg: sum
+        create_metric: false
+      - name: model_weekly_total_requests
+        expr: total_requests
+        agg: sum
+        create_metric: false
+      - name: model_weekly_mean_rpm
+        expr: mean_rpm
+        agg: average
+        create_metric: false
+      - name: model_weekly_peak_rpm
+        expr: peak_rpm
+        agg: max
+        create_metric: false
+      - name: model_weekly_mean_tpm
+        expr: mean_tpm
+        agg: average
+        create_metric: false
+      - name: model_weekly_peak_tpm
+        expr: peak_tpm
+        agg: max
+        create_metric: false
+      - name: model_weekly_error_rate_pct
+        expr: error_rate_pct
+        agg: average
+        create_metric: false
+      - name: model_weekly_peak_to_mean_rpm
+        expr: peak_to_mean_rpm
+        agg: average
+        create_metric: false
+      - name: model_weekly_peak_to_mean_tpm
+        expr: peak_to_mean_tpm
+        agg: average
+        create_metric: false
+      - name: model_weekly_wow_mean_rpm
+        expr: wow_mean_rpm
+        agg: average
+        create_metric: false
+      - name: model_weekly_wow_mean_tpm
+        expr: wow_mean_tpm
+        agg: average
+        create_metric: false
+      - name: model_weekly_wow_total_tokens
+        expr: wow_total_tokens
+        agg: sum
+        create_metric: false
+      - name: model_weekly_wow_total_requests
+        expr: wow_total_requests
+        agg: sum
+        create_metric: false

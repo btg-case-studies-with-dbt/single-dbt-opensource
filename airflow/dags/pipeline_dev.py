@@ -3,6 +3,8 @@ from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.bash import BashOperator
 
+from airflow_callback import dbt_debug_failure_callback
+
 DBT_PROJECT_PATH = "/opt/airflow/dbt"
 DBT_EXECUTABLE   = "/usr/local/airflow/dbt_venv/bin/dbt"
 
@@ -12,6 +14,7 @@ with DAG(
     schedule="0 0 * * *",   # every day at midnight
     catchup=False,
     tags=["daily", "dev"],
+    default_args={"on_failure_callback": dbt_debug_failure_callback},
 ) as dag:
 
     start = EmptyOperator(task_id="start")
@@ -22,7 +25,7 @@ with DAG(
         bash_command=(
             f"cd {DBT_PROJECT_PATH} && "
             f"{DBT_EXECUTABLE} source freshness "
-            f"--target dev "
+            f"--target prod "
             f"--profiles-dir {DBT_PROJECT_PATH}"
         ),
     )
@@ -32,7 +35,7 @@ with DAG(
         bash_command=(
             f"cd {DBT_PROJECT_PATH} && "
             f"{DBT_EXECUTABLE} build "
-            f"--target dev "
+            f"--target prod "
             f"--profiles-dir {DBT_PROJECT_PATH}"
         ),
     )

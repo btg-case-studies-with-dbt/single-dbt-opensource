@@ -44,3 +44,68 @@ seeds:
         description: "Human-readable region description e.g. 'US East (N. Virginia) - Primary US region'."
         tests:
           - not_null
+
+  - name: metric_definitions_seed
+    description: "Seed-backed metric catalog for governed business metrics used by the WBR agent. One row per published metric definition that is promoted into prod_mart_gold.metric_definitions."
+    tags: ['reference', 'semantic-layer', 'seeds']
+
+    config:
+      schema: seeds
+      column_types:
+        metric_key: varchar
+        display_name: varchar
+        business_term: varchar
+        grain: varchar
+        unit: varchar
+        source_table: varchar
+        source_column: varchar
+        formula_definition: varchar
+        owner_team: varchar
+        notes: varchar
+
+    columns:
+      - name: metric_key
+        description: "Stable technical key for the metric definition."
+        tests:
+          - unique
+          - not_null
+
+      - name: display_name
+        description: "Human-readable metric label."
+        tests:
+          - not_null
+
+      - name: business_term
+        description: "Business-facing term or alias the agent should map to the governed metric."
+        tests:
+          - not_null
+
+      - name: grain
+        description: "Primary aggregation grain for the metric definition, such as weekly or monthly."
+        tests:
+          - not_null
+
+      - name: unit
+        description: "Published unit of measure, such as usd_millions, usd, or percent."
+        tests:
+          - not_null
+
+      - name: source_table
+        description: "Fully-qualified mart table that publishes the metric."
+        tests:
+          - not_null
+
+      - name: source_column
+        description: "Column name on the source mart that carries the published metric."
+        tests:
+          - not_null
+
+      - name: formula_definition
+        description: "Business formula or transformation rule for the metric."
+        tests:
+          - not_null
+
+      - name: owner_team
+        description: "Owning business function for the metric definition."
+        tests:
+          - not_null

@@ -1,0 +1,230 @@
+metrics:
+
+  - name: total_gross_revenue
+    label: Total Gross Revenue
+    description: "Total gross revenue before discounts and credits. Governed metric from customer_revenue_weekly."
+    type: simple
+    type_params:
+      measure: total_gross_revenue
+
+  - name: total_net_revenue
+    label: Total Net Revenue
+    description: "Total net revenue after savings-plan discounts. Default revenue metric."
+    type: simple
+    type_params:
+      measure: total_net_revenue
+
+  - name: net_revenue_usd
+    label: Net Revenue USD
+    description: "Net revenue expressed in whole USD dollars (millions * 1,000,000)."
+    type: derived
+    type_params:
+      expr: total_net_revenue * 1000000
+      metrics:
+        - total_net_revenue
+
+  - name: wow_gross_revenue_pct_change
+    label: WoW Gross Revenue % Change
+    description: "Week-over-week percentage change in gross revenue. Null when prior week is zero or missing."
+    type: simple
+    type_params:
+      measure: wow_gross_revenue_pct_change
+
+  - name: wow_net_revenue_pct_change
+    label: WoW Net Revenue % Change
+    description: "Week-over-week percentage change in net revenue. Null when prior week is zero or missing."
+    type: simple
+    type_params:
+      measure: wow_net_revenue_pct_change
+
+  - name: mom_net_revenue_pct_change
+    label: MoM Net Revenue % Change
+    description: "Month-over-month percentage change in net revenue. Null when prior month is zero or missing."
+    type: simple
+    type_params:
+      measure: mom_net_revenue_pct_change
+
+  - name: model_total_net_revenue
+    label: Model Total Net Revenue
+    description: "Total net revenue at the model variant + source_region grain."
+    type: simple
+    type_params:
+      measure: model_total_net_revenue
+
+  - name: unique_customers
+    label: Unique Customers
+    description: "Number of distinct customer accounts per model + region."
+    type: simple
+    type_params:
+      measure: unique_customers
+
+  - name: revenue_per_customer
+    label: Revenue Per Customer
+    description: "Average net revenue per unique customer at the model level."
+    type: ratio
+    type_params:
+      numerator:
+        name: model_total_net_revenue
+      denominator:
+        name: unique_customers
+
+  - name: avg_daily_net_revenue_monthly
+    label: Avg Daily Net Revenue Monthly
+    description: "Average daily net revenue from customer_revenue_monthly."
+    type: simple
+    type_params:
+      measure: monthly_avg_daily_net_revenue
+
+  - name: avg_daily_net_revenue_weekly
+    label: Avg Daily Net Revenue Weekly
+    description: "Average daily net revenue from customer_revenue_weekly."
+    type: simple
+    type_params:
+      measure: weekly_avg_daily_net_revenue
+
+  - name: ytd_net_revenue
+    label: YTD Net Revenue
+    description: "Year-to-date net revenue at the customer level."
+    type: simple
+    type_params:
+      measure: cust_ytd_net_revenue
+
+  - name: ytd_gross_revenue
+    label: YTD Gross Revenue
+    description: "Year-to-date gross revenue at the customer level."
+    type: simple
+    type_params:
+      measure: cust_ytd_gross_revenue
+
+  - name: model_ytd_net_revenue
+    label: Model YTD Net Revenue
+    description: "Year-to-date net revenue at the model + region level."
+    type: simple
+    type_params:
+      measure: model_ytd_net_revenue
+
+  - name: model_ytd_gross_revenue
+    label: Model YTD Gross Revenue
+    description: "Year-to-date gross revenue at the model + region level."
+    type: simple
+    type_params:
+      measure: model_ytd_gross_revenue
+
+  - name: wow_gross_revenue_change
+    label: WoW Gross Revenue Change
+    description: "Week-over-week absolute change in gross revenue at customer level."
+    type: simple
+    type_params:
+      measure: cust_weekly_wow_gross_revenue_change
+
+  - name: wow_net_revenue_change
+    label: WoW Net Revenue Change
+    description: "Week-over-week absolute change in net revenue at customer level."
+    type: simple
+    type_params:
+      measure: cust_weekly_wow_net_revenue_change
+
+  - name: mom_gross_revenue_change
+    label: MoM Gross Revenue Change
+    description: "Month-over-month absolute change in gross revenue at customer level."
+    type: simple
+    type_params:
+      measure: cust_monthly_mom_gross_revenue_change
+
+  - name: mom_net_revenue_change
+    label: MoM Net Revenue Change
+    description: "Month-over-month absolute change in net revenue at customer level."
+    type: simple
+    type_params:
+      measure: cust_monthly_mom_net_revenue_change
+
+  - name: model_wow_gross_revenue_change
+    label: Model WoW Gross Revenue Change
+    description: "Week-over-week absolute change in gross revenue at model + region level."
+    type: simple
+    type_params:
+      measure: model_weekly_wow_gross_revenue_change
+
+  - name: model_wow_net_revenue_change
+    label: Model WoW Net Revenue Change
+    description: "Week-over-week absolute change in net revenue at model + region level."
+    type: simple
+    type_params:
+      measure: model_weekly_wow_net_revenue_change
+
+  - name: model_mom_gross_revenue_change
+    label: Model MoM Gross Revenue Change
+    description: "Month-over-month absolute change in gross revenue at model + region level."
+    type: simple
+    type_params:
+      measure: model_monthly_mom_gross_revenue_change
+
+  - name: model_mom_net_revenue_change
+    label: Model MoM Net Revenue Change
+    description: "Month-over-month absolute change in net revenue at model + region level."
+    type: simple
+    type_params:
+      measure: model_monthly_mom_net_revenue_change
+
+  - name: model_wow_gross_revenue_pct_change
+    label: Model WoW Gross Revenue % Change
+    description: "Week-over-week percentage change in gross revenue at model + region level."
+    type: simple
+    type_params:
+      measure: model_weekly_wow_gross_revenue_pct_change
+
+  - name: model_wow_net_revenue_pct_change
+    label: Model WoW Net Revenue % Change
+    description: "Week-over-week percentage change in net revenue at model + region level."
+    type: simple
+    type_params:
+      measure: model_weekly_wow_net_revenue_pct_change
+
+  - name: model_mom_gross_revenue_pct_change
+    label: Model MoM Gross Revenue % Change
+    description: "Month-over-month percentage change in gross revenue at model + region level."
+    type: simple
+    type_params:
+      measure: model_monthly_mom_gross_revenue_pct_change
+
+  - name: model_mom_net_revenue_pct_change
+    label: Model MoM Net Revenue % Change
+    description: "Month-over-month percentage change in net revenue at model + region level."
+    type: simple
+    type_params:
+      measure: model_monthly_mom_net_revenue_pct_change
+
+  - name: model_unique_customers
+    label: Model Unique Customers
+    description: "Number of distinct customer accounts per model + region (monthly)."
+    type: simple
+    type_params:
+      measure: model_monthly_unique_customers
+
+  - name: model_monthly_total_net_revenue
+    label: Model Monthly Total Net Revenue
+    description: "Total net revenue at the model variant + source_region grain (monthly)."
+    type: simple
+    type_params:
+      measure: model_monthly_total_net_revenue
+
+  - name: model_monthly_total_gross_revenue
+    label: Model Monthly Total Gross Revenue
+    description: "Total gross revenue at the model variant + source_region grain (monthly)."
+    type: simple
+    type_params:
+      measure: model_monthly_total_gross_revenue
+
+  - name: model_wow_customer_change
+    label: Model WoW Customer Change
+    description: "Week-over-week absolute change in unique customer count at model + region level."
+    type: simple
+    type_params:
+      measure: model_weekly_wow_customer_change
+
+  - name: model_mom_customer_change
+    label: Model MoM Customer Change
+    description: "Month-over-month absolute change in unique customer count at model + region level."
+    type: simple
+    type_params:
+      measure: model_monthly_mom_customer_change

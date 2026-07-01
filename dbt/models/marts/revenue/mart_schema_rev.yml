@@ -2,6 +2,53 @@
 
 
 models:
+  - name: metric_definitions
+    description: "Governed metric-definition catalog for revenue metrics used by the WBR agent and business reporting. One row per published metric definition promoted from the dbt seed into prod_mart_gold."
+    group: finance
+    columns:
+      - name: metric_key
+        data_type: character varying
+        description: "Stable technical key for the metric definition."
+        tests:
+          - unique
+          - not_null
+
+      - name: display_name
+        data_type: character varying
+        description: "Human-readable metric label."
+
+      - name: business_term
+        data_type: character varying
+        description: "Business-facing term or alias that should map to the governed metric."
+
+      - name: grain
+        data_type: character varying
+        description: "Primary aggregation grain for the metric definition, such as weekly or monthly."
+
+      - name: unit
+        data_type: character varying
+        description: "Published unit of measure."
+
+      - name: source_table
+        data_type: character varying
+        description: "Fully-qualified mart table that publishes the metric."
+
+      - name: source_column
+        data_type: character varying
+        description: "Column name on the source mart that carries the published metric."
+
+      - name: formula_definition
+        data_type: character varying
+        description: "Business formula or transformation rule for the metric."
+
+      - name: owner_team
+        data_type: character varying
+        description: "Owning business function for the metric definition."
+
+      - name: notes
+        data_type: character varying
+        description: "Additional usage notes for the metric definition."
+
   - name: model_revenue_monthly
     description: "Monthly revenue aggregated at model variant + source region level. One row per model_variant + source_region + month. Incremental with delete+insert — lookback window is 2 months. Includes MoM absolute and percentage changes in gross revenue, net revenue, and unique customer count."
     group: finance

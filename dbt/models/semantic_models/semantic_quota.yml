@@ -1,0 +1,87 @@
+semantic_models:
+
+  - name: customer_quota_weekly_history
+    description: "Gapless weekly history of each customer's quota position per model, inference scope, and source region."
+    model: ref('customer_quota_weekly_history')
+    defaults:
+      agg_time_dimension: quota_week_start_date
+    entities:
+      - name: account_id
+        type: primary
+      - name: model_variant
+        type: foreign
+    dimensions:
+      - name: quota_week_start_date
+        expr: week_start_date
+        type: time
+        type_params:
+          time_granularity: week
+      - name: inference_scope
+        type: categorical
+      - name: source_region
+        type: categorical
+    measures:
+      - name: effective_rpm
+        agg: average
+        create_metric: false
+      - name: effective_tpm
+        agg: average
+        create_metric: false
+      - name: actual_requests
+        agg: sum
+        create_metric: false
+      - name: actual_total_tokens
+        agg: sum
+        create_metric: false
+      - name: peak_rpm_utilization_pct
+        agg: average
+        create_metric: false
+      - name: peak_tpm_utilization_pct
+        agg: average
+        create_metric: false
+      - name: has_pending_request
+        expr: "cast(has_pending_request as integer)"
+        agg: sum
+        create_metric: false
+      - name: effective_tpd
+        agg: average
+        create_metric: false
+      - name: adjusted_rpm
+        agg: average
+        create_metric: false
+      - name: adjusted_tpm
+        agg: average
+        create_metric: false
+      - name: adjusted_tpd
+        agg: average
+        create_metric: false
+      - name: default_rpm
+        agg: average
+        create_metric: false
+      - name: default_tpm
+        agg: average
+        create_metric: false
+      - name: default_tpd
+        agg: average
+        create_metric: false
+      - name: actual_input_tokens
+        agg: sum
+        create_metric: false
+      - name: actual_output_tokens
+        agg: sum
+        create_metric: false
+      - name: actual_peak_rpm
+        agg: max
+        create_metric: false
+      - name: actual_peak_tpm
+        agg: max
+        create_metric: false
+      - name: pending_requested_rpm
+        agg: average
+        create_metric: false
+      - name: pending_requested_tpm
+        agg: average
+        create_metric: false
+      - name: pending_requested_tpd
+        agg: average
+        create_metric: false

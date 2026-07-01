@@ -1,0 +1,158 @@
+metrics:
+
+  - name: total_tokens_consumed
+    label: Total Tokens Consumed
+    description: "Total tokens consumed across all models and customers."
+    type: simple
+    type_params:
+      measure: total_tokens
+
+  - name: total_api_requests
+    label: Total API Requests
+    description: "Total API requests across all models and customers."
+    type: simple
+    type_params:
+      measure: total_requests
+
+  - name: total_input_tokens
+    label: Total Input Tokens
+    description: "Total input (prompt) tokens consumed."
+    type: simple
+    type_params:
+      measure: total_input_tokens
+
+  - name: total_output_tokens
+    label: Total Output Tokens
+    description: "Total output (completion) tokens consumed."
+    type: simple
+    type_params:
+      measure: total_output_tokens
+
+  - name: error_rate
+    label: Error Rate
+    description: "Average error rate as a percentage of total requests."
+    type: simple
+    type_params:
+      measure: error_rate_pct
+
+  - name: tokens_per_request
+    label: Tokens Per Request
+    description: "Average number of tokens per request."
+    type: ratio
+    type_params:
+      numerator:
+        name: total_tokens_consumed
+      denominator:
+        name: total_api_requests
+
+  - name: mean_rpm
+    label: Mean RPM
+    description: "Mean requests per minute."
+    type: simple
+    type_params:
+      measure: mean_rpm_active
+
+  - name: peak_rpm
+    label: Peak RPM
+    description: "Peak requests per minute."
+    type: simple
+    type_params:
+      measure: peak_rpm
+
+  - name: peak_tpm
+    label: Peak TPM
+    description: "Peak tokens per minute."
+    type: simple
+    type_params:
+      measure: peak_tpm
+
+  - name: total_possible_minutes
+    label: Total Possible Minutes
+    description: "Total possible minutes in the week (10,080 for weekly) at customer level."
+    type: simple
+    type_params:
+      measure: cust_weekly_total_possible_minutes
+
+  - name: active_minute_pct
+    label: Active Minute %
+    description: "Percentage of minutes with active usage at customer level."
+    type: simple
+    type_params:
+      measure: cust_weekly_active_minute_pct
+
+  - name: p95_rpm
+    label: P95 RPM
+    description: "95th percentile requests per minute during active minutes at customer level."
+    type: simple
+    type_params:
+      measure: cust_weekly_p95_rpm
+
+  - name: p95_tpm
+    label: P95 TPM
+    description: "95th percentile tokens per minute during active minutes at customer level."
+    type: simple
+    type_params:
+      measure: cust_weekly_p95_tpm
+
+  - name: wow_total_tokens
+    label: WoW Total Tokens Change
+    description: "Week-over-week absolute change in total tokens at customer level."
+    type: simple
+    type_params:
+      measure: cust_weekly_wow_total_tokens
+
+  - name: wow_total_requests
+    label: WoW Total Requests Change
+    description: "Week-over-week absolute change in total requests at customer level."
+    type: simple
+    type_params:
+      measure: cust_weekly_wow_total_requests
+
+  - name: wow_active_minutes
+    label: WoW Active Minutes Change
+    description: "Week-over-week absolute change in active minutes at customer level."
+    type: simple
+    type_params:
+      measure: cust_weekly_wow_active_minutes
+
+  - name: model_wow_total_tokens
+    label: Model WoW Total Tokens Change
+    description: "Week-over-week absolute change in total tokens at model + region level."
+    type: simple
+    type_params:
+      measure: model_weekly_wow_total_tokens
+
+  - name: model_wow_total_requests
+    label: Model WoW Total Requests Change
+    description: "Week-over-week absolute change in total requests at model + region level."
+    type: simple
+    type_params:
+      measure: model_weekly_wow_total_requests
+
+  - name: model_wow_mean_rpm
+    label: Model WoW Mean RPM Change
+    description: "Week-over-week absolute change in mean RPM at model + region level."
+    type: simple
+    type_params:
+      measure: model_weekly_wow_mean_rpm
+
+  - name: model_wow_mean_tpm
+    label: Model WoW Mean TPM Change
+    description: "Week-over-week absolute change in mean TPM at model + region level."
+    type: simple
+    type_params:
+      measure: model_weekly_wow_mean_tpm
+
+  - name: model_peak_to_mean_rpm
+    label: Model Peak-to-Mean RPM
+    description: "Ratio of peak RPM to mean RPM at model + region level."
+    type: simple
+    type_params:
+      measure: model_weekly_peak_to_mean_rpm
+
+  - name: model_peak_to_mean_tpm
+    label: Model Peak-to-Mean TPM
+    description: "Ratio of peak TPM to mean TPM at model + region level."
+    type: simple
+    type_params:
+      measure: model_weekly_peak_to_mean_tpm

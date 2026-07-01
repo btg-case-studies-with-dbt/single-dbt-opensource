@@ -1,0 +1,106 @@
+metrics:
+
+  - name: effective_requests_per_minute
+    label: Effective Requests Per Minute
+    description: "Effective requests per minute limit in effect for the week."
+    type: simple
+    type_params:
+      measure: effective_rpm
+
+  - name: effective_tokens_per_minute
+    label: Effective Tokens Per Minute
+    description: "Effective tokens per minute limit in effect for the week."
+    type: simple
+    type_params:
+      measure: effective_tpm
+
+  - name: peak_rpm_utilization
+    label: Peak RPM Utilization
+    description: "Peak RPM as a percentage of the effective RPM limit."
+    type: simple
+    type_params:
+      measure: peak_rpm_utilization_pct
+
+  - name: peak_tpm_utilization
+    label: Peak TPM Utilization
+    description: "Peak TPM as a percentage of the effective TPM limit."
+    type: simple
+    type_params:
+      measure: peak_tpm_utilization_pct
+
+  - name: customers_with_pending_requests
+    label: Customers With Pending Requests
+    description: "Count of account-model-region-week combinations with pending quota requests."
+    type: simple
+    type_params:
+      measure: has_pending_request
+
+  - name: actual_total_requests
+    label: Actual Total Requests
+    description: "Total actual API requests recorded."
+    type: simple
+    type_params:
+      measure: actual_requests
+
+  - name: actual_total_tokens
+    label: Actual Total Tokens
+    description: "Total actual tokens consumed."
+    type: simple
+    type_params:
+      measure: actual_total_tokens
+
+  - name: effective_tpd
+    label: Effective TPD
+    description: "Effective tokens per day limit in effect for the week."
+    type: simple
+    type_params:
+      measure: effective_tpd
+
+  - name: actual_input_tokens
+    label: Actual Input Tokens
+    description: "Total actual input (prompt) tokens consumed."
+    type: simple
+    type_params:
+      measure: actual_input_tokens
+
+  - name: actual_output_tokens
+    label: Actual Output Tokens
+    description: "Total actual output (completion) tokens consumed."
+    type: simple
+    type_params:
+      measure: actual_output_tokens
+
+  - name: actual_peak_rpm
+    label: Actual Peak RPM
+    description: "Actual peak requests per minute in the week."
+    type: simple
+    type_params:
+      measure: actual_peak_rpm
+
+  - name: actual_peak_tpm
+    label: Actual Peak TPM
+    description: "Actual peak tokens per minute in the week."
+    type: simple
+    type_params:
+      measure: actual_peak_tpm
+
+  - name: pending_requested_rpm
+    label: Pending Requested RPM
+    description: "Highest RPM requested across all pending requests active this week."
+    type: simple
+    type_params:
+      measure: pending_requested_rpm
+
+  - name: pending_requested_tpm
+    label: Pending Requested TPM
+    description: "Highest TPM requested across all pending requests active this week."
+    type: simple
+    type_params:
+      measure: pending_requested_tpm
+
+  - name: pending_requested_tpd
+    label: Pending Requested TPD
+    description: "Highest TPD requested across all pending requests active this week."
+    type: simple
+    type_params:
+      measure: pending_requested_tpd

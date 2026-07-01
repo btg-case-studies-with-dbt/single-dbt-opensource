@@ -3,6 +3,8 @@ from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.bash import BashOperator
 
+from airflow_callback import dbt_debug_failure_callback
+
 DBT_PROJECT_PATH = "/opt/airflow/dbt"
 DBT_EXECUTABLE   = "/usr/local/airflow/dbt_venv/bin/dbt"
 
@@ -12,6 +14,7 @@ with DAG(
     schedule="0 2 * * *",   # every day at 2:00am
     catchup=False,
     tags=["daily", "full"],
+    default_args={"on_failure_callback": dbt_debug_failure_callback},
 ) as dag:
 
     start = EmptyOperator(task_id="start")
