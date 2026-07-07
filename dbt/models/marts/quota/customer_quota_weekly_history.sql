@@ -1,109 +1,42 @@
 {{
     config(
-        materialized='incremental',
-        unique_key=['account_id', 'model_variant', 'inference_scope', 'source_region', 'week_start_date'],
-        incremental_strategy='delete+insert',
-        on_schema_change='append_new_columns'
+        materialized='view'
     )
 }}
 
-with weekly_usage as (
-
-    -- Aggregate minute-level token usage to the weekly grain.
-    -- inference_region, model_type, and traffic_type are collapsed because
-    -- quota limits are not tracked at those sub-dimensions.
-    select
-        account_id,
-        model_variant,
-        inference_scope,
-        source_region,
-        (date_trunc('week', minute_timestamp) - interval '1 day')::date as week_start_date,
-        sum(request_count)                                  as actual_requests,
-        sum(total_tokens)                                   as actual_total_tokens,
-        sum(input_tokens)                                   as actual_input_tokens,
-        sum(output_tokens)                                  as actual_output_tokens,
-        max(request_count)                                  as actual_peak_rpm,
-        max(total_tokens)                                   as actual_peak_tpm
-
-    from {{ ref('int_token_usage_minute') }}
-
-    {% if is_incremental() %}
-        where event_date >= (select max(week_start_date) from {{ this }}) - interval '2 weeks'
-    {% endif %}
-
-    group by
-        account_id,
-        model_variant,
-        inference_scope,
-        source_region,
-        week_start_date
-
-)
+-- COMPATIBILITY VIEW — logic moved to fct_quota_weekly (GATE A item 3 rename,
+-- 2026-07-06). Kept only so semantic_quota.yml keeps parsing until Task 5
+-- re-points semantic models; delete at 5c/7b. Excludes the surrogate PK to
+-- preserve the original column contract.
 
 select
-    hr.account_id,
-    hr.model_variant,
-    hr.inference_scope,
-    hr.source_region,
-    hr.week_start_date,
-    hr.week_end_date,
+    account_id,
+    model_variant,
+    inference_scope,
+    source_region,
+    week_start_date,
+    week_end_date,
+    effective_rpm,
+    effective_tpm,
+    effective_tpd,
+    is_using_default,
+    adjusted_rpm,
+    adjusted_tpm,
+    adjusted_tpd,
+    default_rpm,
+    default_tpm,
+    default_tpd,
+    actual_requests,
+    actual_total_tokens,
+    actual_input_tokens,
+    actual_output_tokens,
+    actual_peak_rpm,
+    actual_peak_tpm,
+    peak_rpm_utilization_pct,
+    peak_tpm_utilization_pct,
+    has_pending_request,
+    pending_requested_rpm,
+    pending_requested_tpm,
+    pending_requested_tpd
 
-    -- -------------------------------------------------------------------------
-    -- Effective limits
-    -- -------------------------------------------------------------------------
-    hr.effective_rpm,
-    hr.effective_tpm,
-    hr.effective_tpd,
-    hr.is_using_default,
-
-    -- Approved adjustment carried forward for this week (null when on default)
-    hr.adjusted_rpm,
-    hr.adjusted_tpm,
-    hr.adjusted_tpd,
-
-    -- System defaults (always shown for reference)
-    hr.default_rpm,
-    hr.default_tpm,
-    hr.default_tpd,
-
-    -- -------------------------------------------------------------------------
-    -- Actual usage (0 for weeks with no activity, null for peak metrics)
-    -- -------------------------------------------------------------------------
-    coalesce(wu.actual_requests, 0)                        as actual_requests,
-    coalesce(wu.actual_total_tokens, 0)                    as actual_total_tokens,
-    coalesce(wu.actual_input_tokens, 0)                    as actual_input_tokens,
-    coalesce(wu.actual_output_tokens, 0)                   as actual_output_tokens,
-    wu.actual_peak_rpm,
-    wu.actual_peak_tpm,
-
-    -- -------------------------------------------------------------------------
-    -- Utilization: peak usage as % of the effective limit
-    -- -------------------------------------------------------------------------
-    round(
-        wu.actual_peak_rpm::numeric / nullif(hr.effective_rpm, 0) * 100, 2
-    )                                                       as peak_rpm_utilization_pct,
-    round(
-        wu.actual_peak_tpm::numeric / nullif(hr.effective_tpm, 0) * 100, 2
-    )                                                       as peak_tpm_utilization_pct,
-
-    -- -------------------------------------------------------------------------
-    -- Pending request state for this specific week
-    -- True for every week the request was open but not yet resolved
-    -- -------------------------------------------------------------------------
-    hr.has_pending_request,
-    hr.pending_requested_rpm,
-    hr.pending_requested_tpm,
-    hr.pending_requested_tpd
-
-from {{ ref('int_quota_history_resolved') }} hr
-
-left join weekly_usage wu
-    on  hr.account_id      = wu.account_id
-    and hr.model_variant   = wu.model_variant
-    and hr.inference_scope = wu.inference_scope
-    and hr.source_region   = wu.source_region
-    and hr.week_start_date = wu.week_start_date
-
-{% if is_incremental() %}
-where hr.week_start_date >= (select max(week_start_date) from {{ this }}) - interval '2 weeks'
-{% endif %}
+from {{ ref('fct_quota_weekly') }}

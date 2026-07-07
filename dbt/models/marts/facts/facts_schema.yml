@@ -1,0 +1,192 @@
+version: 2
+
+models:
+  - name: fct_revenue_daily
+    description: >
+      Daily revenue fact. Grain: one row per account_id × model_variant ×
+      product_sku × billing_type × inference_scope × source_region ×
+      revenue_date. Dim attributes live in dim_customer / dim_model /
+      dim_region and are joined via entities at query time (TASK1_DESIGN §1.2).
+    group: finance
+    columns:
+      - name: revenue_id
+        description: "Surrogate PK — hash of the full grain."
+        tests:
+          - unique
+          - not_null
+      - name: account_id
+        description: "FK → dim_customer.account_id."
+        tests:
+          - not_null
+      - name: model_variant
+        description: "FK → dim_model.model_variant."
+        tests:
+          - not_null
+      - name: source_region
+        description: "FK → dim_region.source_region."
+        tests:
+          - not_null
+      - name: product_sku
+        description: "Degenerate dimension."
+      - name: billing_type
+        description: "Degenerate dimension."
+      - name: inference_scope
+        description: "Degenerate dimension."
+      - name: currency_code
+        description: "Degenerate dimension — ISO currency code."
+      - name: revenue_date
+        description: "Day grain date."
+        tests:
+          - not_null
+      - name: gross_rev_input_tokens
+        description: "Gross revenue from input tokens."
+      - name: gross_rev_output_tokens
+        description: "Gross revenue from output tokens."
+      - name: gross_rev_cache_read_tokens
+        description: "Gross revenue from cache-read tokens."
+      - name: gross_rev_cache_write_tokens
+        description: "Gross revenue from cache-write tokens."
+      - name: total_gross_revenue
+        description: "Total gross revenue for the grain row."
+      - name: savings_plan_amount
+        description: "Savings-plan reduction applied."
+      - name: discount_amount
+        description: "Discount reduction applied."
+      - name: net_revenue
+        description: "total_gross_revenue − savings_plan_amount − discount_amount."
+      - name: loaded_at
+        description: "Audit timestamp from source load."
+
+  - name: fct_token_usage_minute
+    description: >
+      Token usage fact at MINUTE grain. Grain: one row per account_id ×
+      model_variant × inference_scope × source_region × inference_region ×
+      traffic_type × minute_timestamp. Minute grain preserved for peak/p95/
+      active-minute metrics (TASK1_DESIGN §1.1). model_type is degenerate,
+      functionally dependent on model_variant.
+    group: finance
+    columns:
+      - name: usage_id
+        description: "Surrogate PK — hash of the full grain."
+        tests:
+          - unique
+          - not_null
+      - name: account_id
+        description: "FK → dim_customer.account_id."
+        tests:
+          - not_null
+      - name: model_variant
+        description: "FK → dim_model.model_variant."
+        tests:
+          - not_null
+      - name: source_region
+        description: "FK → dim_region.source_region."
+        tests:
+          - not_null
+      - name: model_type
+        description: "Degenerate dimension — proprietary | open_source."
+      - name: inference_scope
+        description: "Degenerate dimension."
+      - name: inference_region
+        description: "Degenerate dimension."
+      - name: traffic_type
+        description: "Degenerate dimension."
+      - name: minute_timestamp
+        description: "Minute-grain timestamp."
+        tests:
+          - not_null
+      - name: event_date
+        description: "Day convenience date derived from minute_timestamp."
+      - name: request_count
+        description: "Requests in the minute (RPM basis)."
+      - name: input_tokens
+        description: "Input tokens in the minute."
+      - name: output_tokens
+        description: "Output tokens in the minute."
+      - name: cache_read_tokens
+        description: "Cache-read tokens in the minute."
+      - name: cache_write_tokens
+        description: "Cache-write tokens in the minute."
+      - name: total_tokens
+        description: "Total tokens in the minute (TPM basis)."
+      - name: error_count
+        description: "Errored requests in the minute."
+      - name: loaded_at
+        description: "Audit timestamp from source load."
+
+  - name: fct_quota_weekly
+    description: >
+      Weekly quota state fact (stateful snapshot — limits in effect that week,
+      carried forward; not an aggregation). Grain: one row per account_id ×
+      model_variant × inference_scope × source_region × week_start_date.
+      Renamed from customer_quota_weekly_history per GATE A item 3; exempt
+      from Task 7b mart deletion.
+    group: finance
+    columns:
+      - name: quota_week_id
+        description: "Surrogate PK — hash of the full grain."
+        tests:
+          - unique
+          - not_null
+      - name: account_id
+        description: "FK → dim_customer.account_id."
+        tests:
+          - not_null
+      - name: model_variant
+        description: "FK → dim_model.model_variant."
+        tests:
+          - not_null
+      - name: source_region
+        description: "FK → dim_region.source_region."
+        tests:
+          - not_null
+      - name: week_start_date
+        description: "Week grain start date (Sunday-based, per int spine)."
+        tests:
+          - not_null
+      - name: week_end_date
+        description: "Week end date."
+      - name: effective_rpm
+        description: "Effective requests-per-minute limit in force that week."
+      - name: effective_tpm
+        description: "Effective tokens-per-minute limit in force that week."
+      - name: effective_tpd
+        description: "Effective tokens-per-day limit in force that week."
+      - name: is_using_default
+        description: "True when no approved adjustment applies."
+      - name: adjusted_rpm
+        description: "Approved RPM adjustment carried forward (null on default)."
+      - name: adjusted_tpm
+        description: "Approved TPM adjustment carried forward (null on default)."
+      - name: adjusted_tpd
+        description: "Approved TPD adjustment carried forward (null on default)."
+      - name: default_rpm
+        description: "System default RPM limit."
+      - name: default_tpm
+        description: "System default TPM limit."
+      - name: default_tpd
+        description: "System default TPD limit."
+      - name: actual_requests
+        description: "Actual requests that week (0 when no activity)."
+      - name: actual_total_tokens
+        description: "Actual total tokens that week (0 when no activity)."
+      - name: actual_input_tokens
+        description: "Actual input tokens that week (0 when no activity)."
+      - name: actual_output_tokens
+        description: "Actual output tokens that week (0 when no activity)."
+      - name: actual_peak_rpm
+        description: "Peak per-minute request count that week (null when no activity)."
+      - name: actual_peak_tpm
+        description: "Peak per-minute token count that week (null when no activity)."
+      - name: peak_rpm_utilization_pct
+        description: "actual_peak_rpm as % of effective_rpm."
+      - name: peak_tpm_utilization_pct
+        description: "actual_peak_tpm as % of effective_tpm."
+      - name: has_pending_request
+        description: "True for weeks a quota request was open but unresolved."
+      - name: pending_requested_rpm
+        description: "Pending requested RPM (null when none)."
+      - name: pending_requested_tpm
+        description: "Pending requested TPM (null when none)."
+      - name: pending_requested_tpd
+        description: "Pending requested TPD (null when none)."
