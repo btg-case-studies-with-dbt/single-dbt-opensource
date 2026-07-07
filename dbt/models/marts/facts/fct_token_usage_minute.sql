@@ -3,7 +3,19 @@
         materialized='incremental',
         unique_key='usage_id',
         incremental_strategy='delete+insert',
-        on_schema_change='append_new_columns'
+        on_schema_change='append_new_columns',
+        post_hook=(
+            [
+                "alter table {{ this }} drop constraint if exists fct_token_usage_minute_pk",
+                "alter table {{ this }} add constraint fct_token_usage_minute_pk primary key (usage_id)",
+                "alter table {{ this }} drop constraint if exists fct_token_usage_minute_customer_fk",
+                "alter table {{ this }} add constraint fct_token_usage_minute_customer_fk foreign key (account_id) references {{ ref('dim_customer') }} (account_id)",
+                "alter table {{ this }} drop constraint if exists fct_token_usage_minute_model_fk",
+                "alter table {{ this }} add constraint fct_token_usage_minute_model_fk foreign key (model_variant) references {{ ref('dim_model') }} (model_variant)",
+                "alter table {{ this }} drop constraint if exists fct_token_usage_minute_region_fk",
+                "alter table {{ this }} add constraint fct_token_usage_minute_region_fk foreign key (source_region) references {{ ref('dim_region') }} (source_region)"
+            ] if target.name not in ['prod', 'ci'] else []
+        )
     )
 }}
 

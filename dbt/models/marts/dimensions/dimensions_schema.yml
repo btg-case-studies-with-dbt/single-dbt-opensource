@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: "Conformed customer dimension. Grain: one row per account_id."
+    columns:
+      - name: account_id
+        description: "Natural PK."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_model
+    description: "Conformed model dimension. Grain: one row per model_variant."
+    columns:
+      - name: model_variant
+        description: "Natural PK."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_region
+    description: "Conformed region dimension. Grain: one row per source_region."
+    columns:
+      - name: source_region
+        description: "Natural PK."
+        tests:
+          - unique
+          - not_null

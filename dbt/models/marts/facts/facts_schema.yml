@@ -18,14 +18,23 @@ models:
         description: "FK → dim_customer.account_id."
         tests:
           - not_null
+          - relationships:
+              to: ref('dim_customer')
+              field: account_id
       - name: model_variant
         description: "FK → dim_model.model_variant."
         tests:
           - not_null
+          - relationships:
+              to: ref('dim_model')
+              field: model_variant
       - name: source_region
         description: "FK → dim_region.source_region."
         tests:
           - not_null
+          - relationships:
+              to: ref('dim_region')
+              field: source_region
       - name: product_sku
         description: "Degenerate dimension."
       - name: billing_type
@@ -75,14 +84,23 @@ models:
         description: "FK → dim_customer.account_id."
         tests:
           - not_null
+          - relationships:
+              to: ref('dim_customer')
+              field: account_id
       - name: model_variant
         description: "FK → dim_model.model_variant."
         tests:
           - not_null
+          - relationships:
+              to: ref('dim_model')
+              field: model_variant
       - name: source_region
         description: "FK → dim_region.source_region."
         tests:
           - not_null
+          - relationships:
+              to: ref('dim_region')
+              field: source_region
       - name: model_type
         description: "Degenerate dimension — proprietary | open_source."
       - name: inference_scope
@@ -132,14 +150,25 @@ models:
         description: "FK → dim_customer.account_id."
         tests:
           - not_null
+          - relationships:
+              to: ref('dim_customer')
+              field: account_id
       - name: model_variant
         description: "FK → dim_model.model_variant."
         tests:
           - not_null
+          - relationships:
+              to: ref('dim_model')
+              field: model_variant
       - name: source_region
         description: "FK → dim_region.source_region."
         tests:
           - not_null
+          - relationships:
+              to: ref('dim_region')
+              field: source_region
+      - name: inference_scope
+        description: "Degenerate dimension."
       - name: week_start_date
         description: "Week grain start date (Sunday-based, per int spine)."
         tests:
