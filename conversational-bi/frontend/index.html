@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conversational BI — Governed Metrics</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --text-muted: #656d76;
+      --accent: #0969da;
+      --accent-hover: #0550ae;
+      --success: #1a7f37;
+      --success-bg: #dafbe1;
+      --info: #0969da;
+      --info-bg: #ddf4ff;
+      --alert: #cf222e;
+      --alert-bg: #ffebe9;
+      --boundary: #9a6700;
+      --boundary-bg: #fff8c5;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 24px; }
+    .container { max-width: 960px; margin: 0 auto; }
+
+    /* Header */
+    h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 4px; }
+    .subtitle { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 24px; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 2px; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
+    .tab-btn { padding: 10px 20px; border: none; background: transparent; font-size: 0.9rem; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+    /* Tab panels */
+    .tab-panel { display: none; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .tab-panel.active { display: block; }
+
+    /* Ask panel */
+    .input-group { display: flex; gap: 8px; margin-bottom: 16px; }
+    .input-group input[type="text"] { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 1rem; }
+    .input-group button { padding: 10px 24px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-size: 0.95rem; cursor: pointer; }
+    .input-group button:hover { background: var(--accent-hover); }
+    .input-group button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .options-row { display: flex; gap: 12px; margin-bottom: 16px; font-size: 0.85rem; color: var(--text-muted); }
+    .options-row label { display: flex; align-items: center; gap: 4px; }
+    .options-row select, .options-row input[type="text"] { padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem; }
+
+    /* Outcome card */
+    .outcome { padding: 16px; border-radius: var(--radius); margin-bottom: 16px; border: 1px solid var(--border); }
+    .outcome.answered { background: var(--success-bg); border-color: var(--success); }
+    .outcome.unknown_metric { background: var(--info-bg); border-color: var(--info); }
+    .outcome.ambiguous { background: var(--info-bg); border-color: var(--info); }
+    .outcome.unsupported_domain { background: var(--boundary-bg); border-color: var(--boundary); }
+    .outcome.system_error { background: var(--alert-bg); border-color: var(--alert); }
+    .outcome-category { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .outcome.answered .outcome-category { color: var(--success); }
+    .outcome.unknown_metric .outcome-category { color: var(--info); }
+    .outcome.ambiguous .outcome-category { color: var(--info); }
+    .outcome.unsupported_domain .outcome-category { color: var(--boundary); }
+    .outcome.system_error .outcome-category { color: var(--alert); }
+    .outcome .field { font-size: 0.875rem; margin-top: 4px; }
+    .outcome .field strong { display: inline-block; min-width: 90px; }
+
+    /* Table for rows */
+    .data-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.85rem; }
+    .data-table th { background: var(--bg); text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--border); }
+    .data-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+
+    /* Session history */
+    .history-item { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: background 0.1s; }
+    .history-item:hover { background: var(--bg); }
+    .history-item .q { font-weight: 500; }
+    .history-item .meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+    .history-item .cat-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 500; }
+    .cat-badge.answered { background: var(--success-bg); color: var(--success); }
+    .cat-badge.unknown_metric { background: var(--info-bg); color: var(--info); }
+    .cat-badge.ambiguous { background: var(--info-bg); color: var(--info); }
+    .cat-badge.unsupported_domain { background: var(--boundary-bg); color: var(--boundary); }
+    .cat-badge.system_error { background: var(--alert-bg); color: var(--alert); }
+
+    /* Metrics Dictionary table */
+    .dict-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .dict-table th { background: var(--bg); text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--border); position: sticky; top: 0; }
+    .dict-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    .dict-table tr:hover td { background: var(--bg); }
+    .domain-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.75rem; background: var(--info-bg); color: var(--info); }
+    .domain-badge.revenue { background: #dafbe1; color: #1a7f37; }
+    .domain-badge.token_usage { background: #ddf4ff; color: #0969da; }
+    .domain-badge.quota { background: #fff8c5; color: #9a6700; }
+    .domain-badge.unknown { background: #f6f8fa; color: #656d76; }
+
+    /* Instructions panel */
+    .instruction-box { margin-bottom: 16px; }
+    .instruction-box h3 { font-size: 1rem; margin-bottom: 8px; }
+    .instruction-box ul { padding-left: 20px; margin-bottom: 12px; }
+    .instruction-box li { margin-bottom: 4px; }
+    .example-question { padding: 8px 12px; background: var(--bg); border-radius: 4px; font-family: monospace; margin-bottom: 6px; cursor: pointer; }
+    .example-question:hover { background: #e1e4e8; }
+
+    .loading { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Conversational BI</h1>
+  <div class="subtitle">Governed Metric Execution Architecture — five-category routing</div>
+
+  <!-- Tabs -->
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="ask" role="tab">Ask</button>
+    <button class="tab-btn" data-tab="dictionary" role="tab">Metrics Dictionary</button>
+    <button class="tab-btn" data-tab="instructions" role="tab">Instructions</button>
+  </div>
+
+  <!-- Tab: Ask -->
+  <div class="tab-panel active" id="panel-ask" role="tabpanel">
+    <div class="input-group">
+      <input type="text" id="question-input" placeholder="e.g. What was total net revenue last week?" autofocus>
+      <button id="ask-btn" onclick="submitQuestion()">Ask</button>
+    </div>
+    <div class="options-row">
+      <label>Provider:
+        <select id="provider-select">
+          <option value="ollama">Ollama</option>
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option>
+        </select>
+      </label>
+      <label>Model:
+        <input type="text" id="model-input" placeholder="auto" size="18">
+      </label>
+      <label>Time override:
+        <input type="text" id="time-override" placeholder="YYYY-MM-DD" size="12">
+      </label>
+    </div>
+    <div id="outcome-container"></div>
+    <div id="history-container">
+      <h3 style="font-size:0.95rem;margin-top:20px;margin-bottom:10px;">Session History</h3>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Metrics Dictionary -->
+  <div class="tab-panel" id="panel-dictionary" role="tabpanel">
+    <div style="margin-bottom:12px;font-size:0.85rem;color:var(--text-muted);">
+      Loaded from <code>GET /catalog</code> &mdash; never hardcoded.
+      <span id="dictionary-summary"></span>
+    </div>
+    <div style="overflow-x:auto;max-height:600px;overflow-y:auto;">
+      <table class="dict-table">
+        <thead><tr>
+          <th>Metric</th><th>Label</th><th>Domain</th><th>Type</th><th>Dimensions</th>
+        </tr></thead>
+        <tbody id="dictionary-body"><tr><td colspan="5">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab: Instructions -->
+  <div class="tab-panel" id="panel-instructions" role="tabpanel">
+    <div class="instruction-box">
+      <h3>How it works</h3>
+      <ol>
+        <li>Type a natural-language business question in the Ask tab.</li>
+        <li>The backend routes it through an LLM to select a governed metric from the catalog.</li>
+        <li>Your question is validated against the five-category contract and answered via MetricFlow.</li>
+        <li>The outcome is displayed with category-specific styling.</li>
+      </ol>
+    </div>
+    <div class="instruction-box">
+      <h3>Outcome Categories</h3>
+      <ul>
+        <li><strong>answered</strong> (<span style="color:var(--success);">green</span>) &mdash; MetricFlow returned a result (zero rows still counts as answered).</li>
+        <li><strong>unknown_metric</strong> (<span style="color:var(--info);">blue</span>) &mdash; The LLM proposed metrics not in the governed catalog.</li>
+        <li><strong>ambiguous</strong> (<span style="color:var(--info);">blue</span>) &mdash; The question matched multiple metrics; refine it.</li>
+        <li><strong>unsupported_domain</strong> (<span style="color:var(--boundary);">amber</span>) &mdash; The question is outside governed domains (Revenue, Token usage, Quota).</li>
+        <li><strong>system_error</strong> (<span style="color:var(--alert);">red</span>) &mdash; Infrastructure failure (MetricFlow, LLM provider).</li>
+      </ul>
+    </div>
+    <div class="instruction-box">
+      <h3>Example Questions</h3>
+      <div class="example-question" onclick="fillExample(this)">What was total net revenue last week?</div>
+      <div class="example-question" onclick="fillExample(this)">How many total tokens were consumed this month?</div>
+      <div class="example-question" onclick="fillExample(this)">What is the YTD net revenue?</div>
+      <div class="example-question" onclick="fillExample(this)">Show me peak RPM utilization for last quarter</div>
+      <div class="example-question" onclick="fillExample(this)">How many support tickets were opened yesterday?</div>
+      <div class="example-question" onclick="fillExample(this)">What is the headcount for engineering?</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Session history (in-memory for current page session) ──────────
+let sessionHistory = [];
+
+// ── Tab switching ────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'dictionary') loadDictionary();
+  });
+});
+
+// ── Fill example question ────────────────────────────────────────
+function fillExample(el) {
+  document.getElementById('question-input').value = el.textContent.trim();
+  document.querySelector('.tab-btn[data-tab="ask"]').click();
+  document.getElementById('question-input').focus();
+}
+
+// ── Submit question ──────────────────────────────────────────────
+async function submitQuestion() {
+  const input = document.getElementById('question-input');
+  const question = input.value.trim();
+  if (!question) return;
+
+  const btn = document.getElementById('ask-btn');
+  const container = document.getElementById('outcome-container');
+
+  btn.disabled = true;
+  container.innerHTML = '<div class="loading"></div> Routing question...';
+
+  const provider = document.getElementById('provider-select').value;
+  const model = document.getElementById('model-input').value.trim() || null;
+  const timeOverride = document.getElementById('time-override').value.trim() || null;
+
+  const body = { question };
+  if (provider) body.provider = provider;
+  if (model) body.model = model;
+  if (timeOverride) body.time_override = timeOverride;
+
+  try {
+    const resp = await fetch('/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+
+    // Add to session history
+    sessionHistory.unshift({
+      question,
+      category: data.category,
+      timestamp: new Date().toLocaleTimeString(),
+      outcome: data,
+    });
+    renderHistory();
+    renderOutcome(data);
+  } catch (err) {
+    container.innerHTML = `<div class="outcome system_error">
+      <div class="outcome-category">system_error</div>
+      <div class="field">Failed to reach backend: ${err.message}</div>
+    </div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Render outcome card ──────────────────────────────────────────
+function renderOutcome(outcome) {
+  const container = document.getElementById('outcome-container');
+  const cat = outcome.category || 'system_error';
+
+  let details = `<div class="outcome ${cat}">
+    <div class="outcome-category">${cat}</div>`;
+
+  if (cat === 'answered') {
+    details += `<div class="field"><strong>Metric:</strong> ${outcome.metric || 'N/A'}</div>`;
+    details += `<div class="field"><strong>Value:</strong> ${outcome.value !== undefined && outcome.value !== null ? outcome.value : 'N/A'}</div>`;
+    details += `<div class="field"><strong>Time:</strong> ${outcome.time_range || 'N/A'}</div>`;
+    details += `<div class="field"><strong>Dimensions:</strong> ${(outcome.dimensions || []).join(', ') || 'none'}</div>`;
+    details += `<div class="field"><strong>Elapsed:</strong> ${outcome.elapsed_seconds || '?'}s</div>`;
+
+    const rows = outcome.rows || [];
+    if (rows.length > 0) {
+      details += '<table class="data-table"><thead><tr>';
+      Object.keys(rows[0]).forEach(k => { details += `<th>${k}</th>`; });
+      details += '</tr></thead><tbody>';
+      rows.forEach(r => {
+        details += '<tr>';
+        Object.values(r).forEach(v => { details += `<td>${v}</td>`; });
+        details += '</tr>';
+      });
+      details += '</tbody></table>';
+    } else {
+      details += `<div style="margin-top:8px;font-style:italic;color:var(--text-muted);">Zero rows returned — per TR10 this is still answered.</div>`;
+    }
+  } else if (cat === 'unknown_metric') {
+    details += `<div class="field"><strong>Message:</strong> ${outcome.message || 'No matching metric in governed catalog'}</div>`;
+  } else if (cat === 'ambiguous') {
+    details += `<div class="field"><strong>Message:</strong> ${outcome.message || 'Question matched multiple metrics'}</div>`;
+    if (outcome.proposed_metrics) {
+      details += `<div class="field"><strong>Proposed:</strong> ${outcome.proposed_metrics.join(', ')}</div>`;
+    }
+  } else if (cat === 'unsupported_domain') {
+    details += `<div class="field"><strong>Message:</strong> ${outcome.message || 'Domain is not supported'}</div>`;
+  } else if (cat === 'system_error') {
+    details += `<div class="field"><strong>Message:</strong> ${outcome.message || 'An internal error occurred'}</div>`;
+    if (outcome.detail) details += `<div class="field"><strong>Detail:</strong> ${outcome.detail}</div>`;
+  }
+
+  details += '</div>';
+  container.innerHTML = details;
+}
+
+// ── Render session history ───────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (sessionHistory.length === 0) {
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;">No questions yet this session.</div>';
+    return;
+  }
+  list.innerHTML = sessionHistory.map((h, i) => `
+    <div class="history-item" onclick="showHistoryItem(${i})">
+      <div class="q">${escHtml(h.question)}</div>
+      <div class="meta">
+        <span class="cat-badge ${h.category}">${h.category}</span>
+        &middot; ${h.timestamp}
+      </div>
+    </div>
+  `).join('');
+}
+
+function showHistoryItem(idx) {
+  const h = sessionHistory[idx];
+  if (h) renderOutcome(h.outcome);
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ── Metrics Dictionary ───────────────────────────────────────────
+async function loadDictionary() {
+  const body = document.getElementById('dictionary-body');
+  const summary = document.getElementById('dictionary-summary');
+
+  try {
+    const resp = await fetch('/catalog');
+    const catalog = await resp.json();
+
+    const metrics = catalog.metrics || [];
+    const domains = catalog.domains || [];
+    summary.textContent = `(${metrics.length} metrics, ${domains.length} domains, ${(catalog.dimensions || []).length} dimensions)`;
+
+    if (metrics.length === 0) {
+      body.innerHTML = '<tr><td colspan="5">No metrics in catalog.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = metrics.map(m => {
+      const domainClass = (m.domain || 'unknown').toLowerCase().replace(/\s+/g, '_');
+      const dims = (m.valid_dimensions || []).slice(0, 6).join(', ');
+      const dimDisplay = dims ? dims : '—';
+      return `<tr>
+        <td><code>${escHtml(m.name)}</code></td>
+        <td>${escHtml(m.label || '')}</td>
+        <td><span class="domain-badge ${domainClass}">${escHtml(m.domain)}</span></td>
+        <td>${escHtml(m.type || 'simple')}</td>
+        <td style="font-size:0.8rem;">${escHtml(dimDisplay)}</td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="5">Failed to load catalog: ${err.message}</td></tr>`;
+  }
+}
+
+// ── Initial render ───────────────────────────────────────────────
+renderHistory();
+</script>
+</body>
+</html>

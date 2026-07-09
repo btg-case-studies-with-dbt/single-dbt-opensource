@@ -16,6 +16,10 @@
 
 - (none yet)
 
+## Decisions
+
+- 2026-07-08: `docs/docs/` (stale prior-product doc chain) deleted. No content loss — prior product unrelated to current project.
+
 ## Progress Notes
 
 ### 2026-07-08 - tpm-agent-amazon @ cli

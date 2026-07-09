@@ -14,3 +14,4 @@ Human Sign-Off,"Final human confirmation gate per milestone and owner before del
 MRD,"Marketing requirements: positioning, audience, messaging pillars, allowed claims, prohibited claims, and launch assets.",6,6. GTM,marketing-ops-manager-google,12.Marketing.md,Canonical consolidated doc
 Decision Log,"Gate-2 approvals, door classifications, and override uses; a decision not logged did not happen (TPM runbook canonical slot).",n/a,7. Program mgmt,tpm-agent-amazon,DECISION_LOG.md,Canonical consolidated doc
 Agents Reference,"Vendored read-only copies of family masters (ENGINEERING_RULES, TPM_RUNBOOK, registry); refreshed only by refresh-agent-docs.sh in kanja-agents.",n/a,All stages,tpm-agent-amazon,agents-reference/,~/Documents/kanja-agents masters
+Bedrock vs Open-Source,"Component comparison mapping Bedrock managed services to open-source alternatives.",2,Reference,software-architect-amazon,13.BEDROCK_VS_OPENSOURCE.md,Reference
