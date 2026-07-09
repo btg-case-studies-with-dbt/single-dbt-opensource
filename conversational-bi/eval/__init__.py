@@ -1,0 +1,1 @@
+# Eval package — domain-balanced evaluation fixtures for the five-category response contract.

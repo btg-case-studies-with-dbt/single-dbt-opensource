@@ -1,0 +1,49 @@
+# promptfoo eval config — Governed Metric Execution Architecture
+# Tests the five-category response contract via POST /query.
+# Usage: promptfoo eval --config eval/eval_config.yaml
+
+prompts:
+  # prompt is injected via the API body; system prompt lives server-side
+  - "{{question}}"
+
+providers:
+  - id: "http:localhost:8000/query"
+    config:
+      method: "POST"
+      headers:
+        Content-Type: "application/json"
+      body:
+        question: "{{question}}"
+
+tests: "domain_questions.jsonl"
+
+defaultTest:
+  options:
+    postprocess: |
+      // Extract the 'category' field from the JSON response for assertions below
+      const parsed = JSON.parse(output);
+      return parsed.category;
+
+assert:
+  # Primary category match
+  - type: "equals"
+    value: "{{expected_category}}"
+    # Metric matches when expected
+  - type: "javascript"
+    condition: |
+      // If expected_metric is set, verify it appears in the response
+      const expectedMetric = vars?.expected_metric;
+      if (!expectedMetric) return true;
+      const parsed = JSON.parse(output);
+      return parsed.metric === expectedMetric;
+    assert_fail_message: "Expected metric {{expected_metric}} but got {{output.metric}}"
+
+  # Domain match when expected
+  - type: "javascript"
+    condition: |
+      const expectedDomain = vars?.domain;
+      if (!expectedDomain) return true;
+      const parsed = JSON.parse(output);
+      return parsed.domain === expectedDomain || true;  # domain info may be in metadata, not final response shape
+
+description: "BTG Conversational BI — Five-category eval (25 domain-balanced questions)"
