@@ -26,7 +26,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+
 from . import catalog_builder
+from . import litellm_gateway
+from .guardrails import ContentFilter, PIIRedactor
+
+# ── guardrails ─────────────────────────────────────────────────────────────
+_pii_redactor = PIIRedactor()
+_content_filter = ContentFilter()
+
+# ── LiteLLM config ─────────────────────────────────────────────────────────
+LITELLM_CONFIG: litellm_gateway.LiteLLMConfig | None = None
 
 # ── logging ───────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -62,6 +78,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── OpenTelemetry (gated by OTEL_ENABLED=true) ────────────────────────────
+
+_tracer: trace.Tracer | None = None
+
+if os.environ.get("OTEL_ENABLED", "").lower() in ("true", "1", "yes"):
+    resource = Resource(attributes={SERVICE_NAME: "conversational-bi"})
+    provider = TracerProvider(resource=resource)
+    provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter()))
+    trace.set_tracer_provider(provider)
+    FastAPIInstrumentor.instrument_app(app)
+    _tracer = trace.get_tracer(__name__)
+    logger.info("OpenTelemetry instrumentation enabled")
+else:
+    logger.info("OpenTelemetry disabled (set OTEL_ENABLED=true to enable)")
+
+
 # ── startup state ─────────────────────────────────────────────────────────
 
 
@@ -73,6 +105,16 @@ async def _startup() -> None:
     # ensure evidence directory exists
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     logger.info("Evidence log: %s", EVIDENCE_LOG)
+
+    global LITELLM_CONFIG
+    LITELLM_CONFIG = litellm_gateway.LiteLLMConfig()
+    logger.info(
+        "LiteLLM gateway config: primary=%s/%s fallback=%s/%s",
+        LITELLM_CONFIG.primary_provider,
+        LITELLM_CONFIG.primary_model,
+        LITELLM_CONFIG.fallback_provider or "(none)",
+        LITELLM_CONFIG.fallback_model or "(none)",
+    )
 
     # preload catalog into app.state
     try:
@@ -86,6 +128,29 @@ async def _startup() -> None:
     except FileNotFoundError as exc:
         logger.error("Catalog not available at startup: %s", exc)
         app.state.catalog = {"domains": [], "metrics": [], "dimensions": []}
+
+
+# ── noop context manager for when OTEL is disabled ────────────────────────
+
+
+class _NoopSpan:
+    """Stand-in for an OpenTelemetry span when OTEL is disabled."""
+
+    def set_attribute(self, key: str, value: Any) -> None:  # noqa: ANN401
+        pass
+
+    def __enter__(self) -> _NoopSpan:
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        pass
+
+
+_noop_tracer_ctx = _NoopSpan()
+
+
+def _noop_tracer() -> _NoopSpan:  # type: ignore[misc]
+    return _noop_tracer_ctx
 
 
 # ── audit log helper ──────────────────────────────────────────────────────
@@ -180,43 +245,76 @@ async def query(request: Request) -> dict[str, Any]:
     if not question:
         raise HTTPException(status_code=422, detail="'question' field is required")
 
+    # ── guardrail 1: PII redaction ──────────────────────────────────────
+    question = _pii_redactor.redact(question)
+
+    # ── guardrail 2: content filter ─────────────────────────────────────
+    blocked, reason = _content_filter.check(question)
+    if blocked:
+        return {
+            "category": "system_error",
+            "message": "Request blocked by content filter",
+            "detail": reason,
+        }
+
     # import llm client and query translator (late import for clean startup)
     from . import llm_client, query_translator  # noqa: PLC0415
 
     start = time.monotonic()
 
-    # get LLM selection
-    llm_result = llm_client.select_metrics(
-        question=question,
-        catalog=app.state.catalog,
-        provider=provider,
-        model=model,
-    )
+    tracer = _tracer or _noop_tracer
+    with tracer.start_as_current_span("query") as span:  # type: ignore[union-attr]
+        # Route to LiteLLM proxy or native llm_client
+        config_provider = (provider or os.environ.get("LLM_PROVIDER", "ollama")).lower()
 
-    # process question through five-category router
-    outcome = query_translator.process_question(
-        question=question,
-        catalog=app.state.catalog,
-        llm_result=llm_result,
-        time_override=time_override,
-    )
-    elapsed = time.monotonic() - start
+        if config_provider == "litellm":
+            proxy = litellm_gateway.LiteLLMProxy(config=LITELLM_CONFIG)
+            llm_result = proxy.select_metrics(
+                question=question,
+                catalog=app.state.catalog,
+                provider=provider,
+                model=model,
+            )
+        else:
+            # get LLM selection via native client (default path)
+            llm_result = llm_client.select_metrics(
+                question=question,
+                catalog=app.state.catalog,
+                provider=provider,
+                model=model,
+            )
 
-    # TR9: structured audit log
-    audit_record = {
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "elapsed_seconds": round(elapsed, 3),
-        "question": question,
-        "category": outcome["category"],
-        "metric": outcome.get("metric"),
-        "dimensions": outcome.get("dimensions"),
-        "time_range": outcome.get("time_range"),
-        "domain": llm_result.get("domain") if llm_result else None,
-    }
-    _write_audit_log(audit_record)
+        # process question through five-category router
+        outcome = query_translator.process_question(
+            question=question,
+            catalog=app.state.catalog,
+            llm_result=llm_result,
+            time_override=time_override,
+        )
+        elapsed = time.monotonic() - start
 
-    outcome["elapsed_seconds"] = round(elapsed, 3)
-    return outcome
+        # span attributes
+        if hasattr(span, "set_attribute") and not isinstance(span, _NoopSpan):
+            span.set_attribute("app.question.length", len(question))
+            span.set_attribute("app.question.provider", config_provider)
+            span.set_attribute("app.question.category", outcome["category"])
+            span.set_attribute("app.question.elapsed_seconds", round(elapsed, 3))
+
+        # TR9: structured audit log (PII-redacted)
+        audit_record = {
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "elapsed_seconds": round(elapsed, 3),
+            "question": _pii_redactor.redact(question),
+            "category": outcome["category"],
+            "metric": outcome.get("metric"),
+            "dimensions": outcome.get("dimensions"),
+            "time_range": outcome.get("time_range"),
+            "domain": llm_result.get("domain") if llm_result else None,
+        }
+        _write_audit_log(audit_record)
+
+        outcome["elapsed_seconds"] = round(elapsed, 3)
+        return outcome
 
 
 # ── static frontend mount ──────────────────────────────────────────────────
