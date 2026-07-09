@@ -28,3 +28,9 @@ venv/
 # Docker
 *.log
 *.zip
+
+# Execution evidence
+evidence/
+
+# Scratch/generated
+tmp/
