@@ -32,16 +32,21 @@
 
 ## Next Actions (for next session)
 
-Read this chart first. Do git writes from the Mac terminal only (device-bridge git leaves un-clearable locks). The full query path now WORKS end-to-end (first time ever) — remaining work is measuring/raising accuracy, plus committing the pile.
+Read this chart first. NOTE: `git` writes from THIS session worked cleanly with no stale locks (commit `3a67716`) — the old device-bridge lock warning did not bite; TPM can commit directly. The full query path WORKS end-to-end; the truthful TR12 baseline is **44% overall / 52% category / 4-of-6 metric (deepseek-v4-pro)**. The bottleneck is guardrails, not the model.
 
-**Runtime bring-up (every session):** start Docker Desktop → `docker compose up -d postgres` → boot backend in venv: `cd conversational-bi && DBT_HOST=localhost LLM_PROVIDER=ollama OLLAMA_MODEL=llama3.1:8b OLLAMA_BASE_URL=http://localhost:11434 .venv/bin/python -m uvicorn backend.main:app --port 8000`. `DBT_HOST=localhost` is REQUIRED (mf reaches prod marts on localhost; in-container default stays `postgres`).
+**Runtime bring-up (every session):** start Docker Desktop → `docker compose up -d postgres` → boot backend in venv from `conversational-bi/`: `DBT_HOST=localhost .venv/bin/python -m uvicorn backend.main:app --port 8000` (the gitignored `.env` supplies the provider: opencode/deepseek-v4-pro). `DBT_HOST=localhost` REQUIRED (mf reaches prod marts on localhost; in-container default stays `postgres`). To use ollama instead, set `LLM_PROVIDER=ollama OLLAMA_MODEL=llama3.1:8b` in the launch env.
 
-1. **COMMIT the accumulated pile from the Mac terminal** (large, uncommitted): Step1 (`conversational-bi/requirements.txt`, `README.md`), backend fixes (`backend/main.py`, `backend/query_translator.py`, `.env.example`), `dbt/profiles.yml` (DBT_HOST env-var), eval (`eval/eval_config.yaml`, `eval/domain_questions.csv`; `git rm eval/domain_questions.jsonl`), program-state (`docs/DECISION_LOG.md`, `memory.md`). Keep `.env` OUT (gitignored). Decide the parked 6-file dbt fix separately (below). `rm -rf .cbi-verify-venv/ _to_delete/`.
-2. **Better-model swap (PENDING user):** user creating an OpenRouter/OpenAI-compatible key. Need base URL + model id. Wire via `.env`: `LLM_PROVIDER=openai`, `OPENAI_API_KEY=<key>` (user adds), `OPENAI_BASE_URL=<url>`, `OPENAI_MODEL=<vendor/model>`. NOTE: `_call_openai` hardcodes `response_format:json_object` (llm_client.py:127) — model must support JSON mode. Then re-run eval to measure category+metric on the better model.
-3. **Ratify or revert** the `dbt-postgres==1.10.2` pin the engineer added to `conversational-bi/requirements.txt` (additive, needed for mf→postgres; reversible).
-4. **Route to data-architect:** `int_revenue_daily` column contract — `int_schema.yml` tests 4 columns (company_name, segment, vertical, account_size) the model doesn't produce → clean `dbt build --target prod` errors + cascade-SKIPs marts. Interim: analytics-engineer used `--exclude`. Durable green needs the yml/model reconciled.
-5. **Governance (still open):** restore governed evidence seed (`git revert f31b75e`) vs keep retriever fixtures — log the call.
-6. **Retrieval-quality eval** (Wave 2 open item) — owner ai-architect, not started.
+- ✅ DONE this session: E2E query path, truthful harness, opencode/deepseek swap, catalog hygiene (69→44) — all committed at `3a67716`.
+
+**Outstanding (priority order):**
+1. **ROTATE the opencode key** (user) — it's in gitignored `.env` (unexposed in git) but was shown in a chat transcript. Replace the value in `conversational-bi/.env`.
+2. **#1 GUARDRAIL/PROMPT work → ai-architect (THE lever).** deepseek is 6/6 on `answered` but 0/4 `ambiguous`, 0/2 `unsupported_domain`, and over-answers 9 `unknown_metric`/`ambiguous` rows — fabricates a metric instead of declining. Redesign prompt/guardrail to fire the rejection categories; measure via re-run. May need router-code changes (senior-software-engineer). Approved, not yet launched (held at user request).
+3. **8-family semantic-layer gap → data-architect (confirm) then analytics-engineer (rebuild).** 8 canonical metric families are named in `docs/10` but only their RETIRED forms were ever built; catalog hygiene now correctly withholds the retired forms, so these families are absent from the served catalog. Needs a scoped dbt rename + `dbt parse`/regenerate — care given prior build-failure history.
+4. **Parked 6-file dbt RI fix** (dim/fct models, still uncommitted & modified in tree): decide commit (accept dbt-test-enforced RI) vs restore post_hooks. The prod marts were built WITH this fix present.
+5. **Ratify/revert** `dbt-postgres==1.10.2` pin in `conversational-bi/requirements.txt` (additive, needed for mf→postgres).
+6. **`int_revenue_daily` column contract → data-architect:** `int_schema.yml` tests 4 columns the model doesn't produce → clean `dbt build --target prod` errors + cascade-SKIPs marts. Interim `--exclude` used; durable green needs yml/model reconciled.
+7. **Governance:** restore governed evidence seed (`git revert f31b75e`) vs keep retriever fixtures — log the call.
+8. **Retrieval-quality eval** (Wave 2) — ai-architect, not started. **TRD TR12 wording** reconciliation — solutions-architect (flagged).
 
 ## Progress Notes
 
