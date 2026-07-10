@@ -32,6 +32,17 @@
 
 ## Next Actions (for next session)
 
+### ▶ NEXT SESSION KICKOFF — RANKING/ARGMAX GUARD (paste-ready)
+
+The immediate next increment. Human approved sequencing it after `3a7dab2`.
+
+- **WHAT:** build the ranking/argmax guard — the named residual from commit `3a7dab2`.
+- **WHY:** "which/most/top/highest/lowest" questions (e.g. "which deployment used the most tokens", eval row 17) return a grand TOTAL across all groups instead of a ranking — a correct number to a *different* question. Neither the filter-coverage guard nor the prompt catches it (not a scope filter, not out-of-catalog).
+- **BAR (unchanged):** never-wrong-on-governed-data — correct or abstain, never confidently wrong; coverage-drop accepted.
+- **FIX SHAPE:** detect superlative/argmax intent → force a group-by breakdown so the answer actually ranks, OR abstain-and-clarify. ai-architect's call which.
+- **THE PLAY (same as `3a7dab2`):** (1) ai-architect designs argmax detector + prompt change, defines payload contract + eval expectation; (2) if a code guard is needed, route senior-software-engineer against that contract (ai-architect owns prompt, SSE owns code — no absorbing); (3) verify as one — 3× seed-pinned (temp0/seed42), precision→toward 100%, no regression on passing rows, gate-1 still fails a deliberately-wrong row (assertions under `defaultTest.assert`); (4) numbers → human gate-2 → commit as ONE, scoped.
+- **GUARDRAILS:** do NOT bundle the parked 6-file dbt RI fix or `docs/03.PRD.md` (both still modified in tree) — scope the commit to argmax-guard files only. Present a numbered task plan with estimates and wait for human approval before changing anything. Backend bring-up recipe is below.
+
 Read this chart first. NOTE: `git` writes from THIS session worked cleanly with no stale locks (commit `3a67716`) — the old device-bridge lock warning did not bite; TPM can commit directly. The full query path WORKS end-to-end; the truthful TR12 baseline is **44% overall / 52% category / 4-of-6 metric (deepseek-v4-pro)**. The bottleneck is guardrails, not the model.
 
 **Runtime bring-up (every session):** start Docker Desktop → `docker compose up -d postgres` → boot backend in venv from `conversational-bi/`: `DBT_HOST=localhost .venv/bin/python -m uvicorn backend.main:app --port 8000` (the gitignored `.env` supplies the provider: opencode/deepseek-v4-pro). `DBT_HOST=localhost` REQUIRED (mf reaches prod marts on localhost; in-container default stays `postgres`). To use ollama instead, set `LLM_PROVIDER=ollama OLLAMA_MODEL=llama3.1:8b` in the launch env.
