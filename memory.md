@@ -40,7 +40,7 @@ Read this chart first. NOTE: `git` writes from THIS session worked cleanly with 
 
 **Outstanding (priority order):**
 1. **ROTATE the opencode key** (user) — it's in gitignored `.env` (unexposed in git) but was shown in a chat transcript. Replace the value in `conversational-bi/.env`.
-2. **#1 GUARDRAIL/PROMPT work → ai-architect (THE lever).** deepseek is 6/6 on `answered` but 0/4 `ambiguous`, 0/2 `unsupported_domain`, and over-answers 9 `unknown_metric`/`ambiguous` rows — fabricates a metric instead of declining. Redesign prompt/guardrail to fire the rejection categories; measure via re-run. May need router-code changes (senior-software-engineer). Approved, not yet launched (held at user request).
+2. ✅ DONE + COMMITTED `3a7dab2` 2026-07-10 — never-wrong-on-governed-data increment (prompt split + filter-coverage guard + ruler fixes + temp0/seed42). Gate-2 passed: precision 70%→84%, hallucination 0, coverage ~25%. See Progress Note below. **NEXT INCREMENT: ranking/argmax guard** for "which/most/top" questions (named residual, human-accepted, sequenced next; owner ai-architect ± SSE).
 3. **8-family semantic-layer gap → data-architect (confirm) then analytics-engineer (rebuild).** 8 canonical metric families are named in `docs/10` but only their RETIRED forms were ever built; catalog hygiene now correctly withholds the retired forms, so these families are absent from the served catalog. Needs a scoped dbt rename + `dbt parse`/regenerate — care given prior build-failure history.
 4. **Parked 6-file dbt RI fix** (dim/fct models, still uncommitted & modified in tree): decide commit (accept dbt-test-enforced RI) vs restore post_hooks. The prod marts were built WITH this fix present.
 5. **Ratify/revert** `dbt-postgres==1.10.2` pin in `conversational-bi/requirements.txt` (additive, needed for mf→postgres).
@@ -49,6 +49,28 @@ Read this chart first. NOTE: `git` writes from THIS session worked cleanly with 
 8. **Retrieval-quality eval** (Wave 2) — ai-architect, not started. **TRD TR12 wording** reconciliation — solutions-architect (flagged).
 
 ## Progress Notes
+
+### 2026-07-10 - tpm-agent-amazon @ cli — never-wrong-on-governed-data increment built (uncommitted, awaiting final re-measure + gate-2)
+
+**Situation:** Human demanded the bar in their own words: "with structured data you cannot go wrong; you can say 'I don't have the data,' but you cannot afford to be inaccurate." Drove the guardrail lever to deliver it.
+
+**Arc this session:**
+1. **First guardrail pass (ai-architect): 44%→84%.** Root cause of the old 44% was that `ambiguous`/`unsupported_domain` were structurally unreachable in code and the prompt forced "always pick a metric." Fix in `backend/llm_client._build_system_prompt` (decline vocab + few-shots) + `backend/query_translator.process_question` (safety-biased classification routing). NOT the model — deepseek was already 6/6 on answerable.
+2. **Bar defined & defended (ai-architect, seed-pinned temp0×3):** (a) never-out-of-catalog = provable deterministic 100%, proven (TR3 guard rejects fabricated names). (b) never-wrong-but-valid = NOT guaranteeable by LLM alone — found **3 STABLE (deterministic) wrong answers**: silent-drop of a restrictive filter → unscoped total returned as if scoped. Precision-on-answered was **70%**. Sin is 100% over-answering, 0 under-answering (recall 7/7). Ruler fixed: `revenue_per_customer` IS served (→answered); no margin metric exists (→unknown_metric).
+3. **The mechanism = split ownership.** ai-architect prompt split: model now emits a `filters` field distinguishing BREAKDOWN (group-by, droppable, still answer) from restrictive SCOPE filter (`field:null` when ungovernable). SSE deterministic guard `check_filter_coverage()` in `query_translator.py`: keyed off "was scope APPLIED to the mf query" (no `--where` push-down exists → always false → any non-empty `filters` abstains). Phase-2 push-down deferred behind a clean seam (`_filter_is_applied`). Abstain reuses `unknown_metric` + `reason:"unsupported_filter"` (five-category contract intact), message per human: state not-tracked + SHOW available governed dims + NAME the unmatched value.
+4. **SSE verified GREEN:** 10/10 stdlib unittest; E2E on live backend — CS-team tokens / subscriptions / "net revenue from marketplace" all abstain with explain-and-show; "revenue by product line" (benign breakdown) still answers. Literal "value from marketplace" abstains via prompt's vague-measure path not the guard — both safe (noted, not a defect).
+
+**Emergent design (human insight, folded into clarify-and-continue follow-on spec, docs/03.PRD.md):** a clarifying question only helps if the user's answer maps to a GOVERNED field; if it names ungoverned data it's a data-model gap → escalate to data-architect, don't fake. Three-way: answer / clarify-to-user / escalate-as-governance-gap.
+
+**Uncommitted on `dev` (commit as ONE increment after gate-2):** `backend/llm_client.py` (prompt split + temp0/seed), `backend/query_translator.py` (guard + routing), `conversational-bi/tests/test_check_filter_coverage.py` + `tests/__init__.py` (new), `eval/domain_questions.csv` (2 ruler fixes). PLUS the still-parked 6-file dbt RI fix (separate, older — do NOT bundle).
+
+**GATE-2 PASSED + COMMITTED `3a7dab2` (2026-07-10).** Final 3× seed-pinned numbers: precision-on-answered **84%** (↑from 70%), category **93%**, deterministic hallucination **0**, coverage **~25%** (↓from ~40%, accepted). All 3 mis-scoped wrong answers now abstain (stable across runs); benign breakdown still answers; gate-1 confirmed non-vacuous (real rows FAIL). Commit scoped to 4 paths (llm_client, query_translator, domain_questions.csv, tests/) — deliberately EXCLUDED the parked 6-file dbt RI fix and docs/03.PRD.md (still modified in tree).
+
+**Named residual → NEXT INCREMENT (ranking/argmax guard):** "which/most/top/highest" questions (e.g. row 17 "which deployment used the most tokens") return a grand TOTAL instead of a ranking — a correct number to a different question. Distinct failure class: not a scope filter, not out-of-catalog, so neither guard nor prompt catches it. Fix = detect superlative → force group-by breakdown or abstain-and-clarify. New increment, owner ai-architect (+ SSE if code guard). Human accepted as named residual, sequenced after.
+
+**Determinism caveat:** deepseek-v4-pro is NOT bit-deterministic at temp 0 — one row jittered answered↔safe-abstain (never wrong). A hard determinism guarantee is a model/provider question → ai-research, not a prompt fix.
+
+**Open follow-ons (deferred, tracked):** clarify-and-continue multi-turn (PM defined FR4/FR4a/FR4b in docs/03.PRD.md; software-architect sized ~10-12 agent-hrs, stateless client-carried continuation, `agent_graph.py` is DEAD CODE not on request path; needs `ambiguous` non-terminal contract change → solutions-architect one-way door); Phase-2 filter push-down; "default-collision wrong-default" residual (bare "revenue"→net silently — bounded, mitigate by echoing metric label, zero-it = PM coverage/safety call); vendoring `docs/agents-reference/` (SSE flagged, human's call).
 
 ### 2026-07-09/10 (marathon) - tpm-agent-amazon @ cli — query path made to WORK end-to-end; harness false-green caught
 
