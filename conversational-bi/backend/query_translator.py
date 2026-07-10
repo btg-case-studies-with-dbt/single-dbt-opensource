@@ -84,6 +84,48 @@ def _system_error(message: str, detail: str = "") -> dict[str, Any]:
     }
 
 
+def _unsupported_filter(
+    computable_metric: str,
+    available_dimensions: list[str],
+    unsupported_filters: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Build the ``unknown_metric``/``unsupported_filter`` abstain object.
+
+    Reuses the ``unknown_metric`` category (keeping the five-category contract
+    intact) with a discriminating ``reason`` so a caller can tell a fabricated
+    metric apart from an ungovernable SCOPE filter. The object is deliberately
+    self-explaining: it names the metric it *could* have computed, the governed
+    dimensions that DO exist for that metric, and the exact unmatched value(s),
+    so the message can show its work rather than emit a blank "no".
+    """
+    # Human-readable list of the values the model could not govern.
+    values = [str(f.get("value")) for f in unsupported_filters if f.get("value")]
+    values_str = ", ".join(f"'{v}'" for v in values) or "that constraint"
+    first_value = values[0] if values else "that constraint"
+
+    if available_dimensions:
+        dims_str = ", ".join(available_dimensions)
+        dims_clause = f"{computable_metric} can be broken down by {dims_str}."
+    else:
+        dims_clause = f"{computable_metric} has no additional breakdown dimensions."
+
+    message = (
+        f"I can compute {computable_metric}, but the governed model has no way to "
+        f"identify {values_str}. {dims_clause} I don't see any governed value "
+        f"matching '{first_value}' — tracking that would be a data-model change."
+    )
+
+    return {
+        "category": "unknown_metric",
+        "reason": "unsupported_filter",
+        "computable_metric": computable_metric,
+        "available_dimensions": available_dimensions,
+        "unsupported_filters": unsupported_filters,
+        "proposed_metrics": [computable_metric],
+        "message": message,
+    }
+
+
 # ── TR3: HallucinationChecker ─────────────────────────────────────────────
 
 
@@ -161,6 +203,98 @@ def validate_dimensions(
     if invalid:
         logger.info("Dimensions filtered out (invalid for selected metrics): %s", invalid)
     return valid
+
+
+# ── filter-coverage guard (never confidently wrong) ───────────────────────
+
+
+def check_filter_coverage(
+    metric: str,
+    filters: list[dict[str, Any]] | None,
+    catalog: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Abstain when a restrictive SCOPE filter cannot be applied to the query.
+
+    On a governed semantic layer the number is exact, so the only way to be
+    wrong is to answer a DIFFERENT question with a real metric. That happens when
+    the model asks for a scoped total ("revenue *from marketplace*", "tokens
+    billed *to the Customer Success team*") but the restriction is silently
+    dropped and an UNSCOPED total is returned as if it were scoped. This guard
+    converts that class of confident-wrong answer into a transparent abstention.
+
+    Distinction from ``validate_dimensions``: a ``dimension`` is a BREAKDOWN
+    (group-by) — dropping an unexpressible breakdown still leaves the metric's
+    TOTAL correct, so those keep answering. A ``filter`` is a restrictive SCOPE
+    that CHANGES the number, so a dropped filter yields a wrong number.
+
+    Phase-1 rule (this increment): the MetricFlow command builder emits NO
+    ``--where`` push-down, so NO scope filter is ever actually applied to the
+    query. Therefore ANY non-empty ``filters`` means the returned total is
+    unscoped = a different number → ABSTAIN. The guard keys off "was the scope
+    actually applied to the query", NOT merely "is ``field`` a valid dimension":
+    a filter naming a perfectly valid catalog dimension still yields a wrong
+    answer today because nothing pushes it down.
+
+    Phase-2 seam (DEFERRED — do not build here): when ``build_mf_query_command``
+    learns to push expressible filters down as ``--where``, this function should
+    partition ``filters`` into pushed vs. residual and abstain only on the
+    residual. That is the single place to change; the ``_filter_is_applied``
+    predicate below is the seam.
+
+    Parameters
+    ----------
+    metric
+        The single selected metric name (ambiguity is already resolved upstream).
+    filters
+        The selection payload's ``filters`` list. ``None`` or absent is read as
+        ``[]`` (backward-compat with responses that predate the field).
+    catalog
+        The compact catalog; used to look up the metric's ``valid_dimensions``
+        so the abstention can SHOW the governed dimensions that do exist.
+
+    Returns
+    -------
+    dict or None
+        An ``unknown_metric`` / ``unsupported_filter`` abstain object when a
+        scope filter cannot be governed, or ``None`` to pass through.
+    """
+    filters = filters or []
+    if not isinstance(filters, list):
+        # Defensive: a malformed payload (non-list) is treated as "no usable
+        # governed scope" — fail loud toward abstention, never toward a
+        # silently-unscoped answer.
+        logger.warning("filters payload was not a list (%r) — treating as ungoverned", type(filters))
+        filters = []
+    if not filters:
+        return None  # no scope constraint → the total is the right answer
+
+    # Phase 1: nothing is pushed down, so every filter is unapplied. Every
+    # non-empty filter set is therefore an unsupported scope → abstain.
+    unsupported = [f for f in filters if not _filter_is_applied(f, catalog)]
+    if not unsupported:
+        return None  # (unreachable in Phase 1; the Phase-2 pass-through path)
+
+    metric_lookup = {m["name"]: m for m in catalog.get("metrics", [])}
+    available_dimensions = metric_lookup.get(metric, {}).get("valid_dimensions", [])
+
+    logger.info(
+        "Filter-coverage guard ABSTAIN: metric=%s unsupported_filters=%s",
+        metric,
+        unsupported,
+    )
+    return _unsupported_filter(metric, available_dimensions, unsupported)
+
+
+def _filter_is_applied(filter_obj: dict[str, Any], catalog: dict[str, Any]) -> bool:  # noqa: ARG001
+    """Return whether a scope filter is actually pushed down to the mf query.
+
+    Phase-1 seam: there is NO ``--where`` push-down in the query today, so no
+    filter is ever applied — this always returns ``False``. Phase 2 replaces the
+    body with the real push-down check (is ``field`` an expressible catalog
+    dimension AND does the command builder emit it as ``--where``). Keeping the
+    predicate isolated means the guard's abstain logic never changes.
+    """
+    return False
 
 
 # ── TR6: relative time resolution ─────────────────────────────────────────
@@ -432,24 +566,51 @@ def process_question(
         llm_result.get("domain"),
     )
 
-    # ── 2. TR3: unknown metrics ────────────────────────────────────────
+    # ── 2. Decline routing (classification-driven, safety-biased) ──────
+    # The model self-classifies into the five-category contract; the checks
+    # below TRUST that signal but override toward a rejection category when the
+    # payload contradicts an "answered" claim (fabricated or multiple metrics).
+    # A missing/blank classification degrades gracefully to the structural
+    # checks (empty / >1 / unknown-name), preserving backward compatibility.
+    classification = str(llm_result.get("classification") or "").strip().lower()
     proposed_metrics = llm_result.get("metrics", [])
-    if not proposed_metrics:
-        return _unknown_metric([])
+    domain = llm_result.get("domain")
+    supported_domains = set(catalog.get("domains", []))
 
+    # 2a. unsupported_domain — checked FIRST so an out-of-catalog subject
+    # (which also carries metrics: []) is not swallowed by the unknown_metric
+    # shortcut below. Fires on the model's flag OR on a named domain that is
+    # neither supported nor the "unknown" placeholder.
+    if classification == "unsupported_domain":
+        return _unsupported_domain(domain or "unknown")
+    if domain and domain != "unknown" and domain not in supported_domains:
+        return _unsupported_domain(domain)
+
+    # 2b. ambiguous — model flagged it, OR it proposed more than one metric.
+    if classification == "ambiguous" or len(proposed_metrics) > 1:
+        return _ambiguous(proposed_metrics)
+
+    # 2c. unknown_metric — model flagged it, OR proposed nothing, OR proposed a
+    # name absent from the governed catalog (TR3 hallucination guard overrides
+    # an over-eager "answered" classification).
+    if classification == "unknown_metric" or not proposed_metrics:
+        return _unknown_metric(proposed_metrics)
     unknown = _check_unknown_metrics(proposed_metrics, catalog)
     if unknown:
         return unknown
 
-    # ── 3. Ambiguity check ─────────────────────────────────────────────
-    ambiguous = _check_ambiguous(proposed_metrics)
-    if ambiguous:
-        return ambiguous
-
-    # ── 4. TR5: domain check ───────────────────────────────────────────
-    domain_check = _check_domain(llm_result.get("domain"), catalog)
-    if domain_check:
-        return domain_check
+    # ── 4. Filter-coverage guard (never confidently wrong) ─────────────
+    # A restrictive SCOPE filter that cannot be applied to the query would make
+    # us return an UNSCOPED total as if it were scoped — a confident wrong
+    # answer. Abstain instead. Runs AFTER unknown/ambiguous (single valid metric
+    # is now guaranteed) and BEFORE build/execute (so no wrong query ever runs).
+    # ``filters`` absent → read as [] (backward-compat). Breakdowns are handled
+    # separately by validate_dimensions and are unaffected.
+    filter_abstain = check_filter_coverage(
+        proposed_metrics[0], llm_result.get("filters"), catalog
+    )
+    if filter_abstain:
+        return filter_abstain
 
     # ── 5. TR7: validate dimensions ────────────────────────────────────
     proposed_dims = llm_result.get("dimensions", [])

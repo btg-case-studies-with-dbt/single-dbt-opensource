@@ -1,13 +1,13 @@
 question,expected_category,expected_metric,domain
 What was total revenue last quarter?,answered,total_net_revenue,revenue
-How much revenue did we get from subscriptions last month?,answered,total_net_revenue,revenue
+How much revenue did we get from subscriptions last month?,unknown_metric,,revenue
 Show me net revenue by product line for this year,answered,total_net_revenue,revenue
 What is our recurring revenue this month?,unknown_metric,,revenue
 Revenue growth rate compared to last quarter?,unknown_metric,,revenue
-What is our profit margin by region?,ambiguous,,revenue
+What is our profit margin by region?,unknown_metric,,revenue
 How much value did we get from marketplace last year?,unknown_metric,,revenue
 Give me the refund rate for the last 90 days,unknown_metric,,revenue
-What is the average revenue per customer?,unknown_metric,,revenue
+What is the average revenue per customer?,answered,revenue_per_customer,revenue
 How many tokens was the model trained on?,unknown_metric,,token_usage
 What was total token usage yesterday?,answered,total_tokens_consumed,token_usage
 Show me prompt tokens used this week by model,answered,total_input_tokens,token_usage

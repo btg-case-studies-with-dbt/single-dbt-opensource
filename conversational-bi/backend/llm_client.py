@@ -48,26 +48,53 @@ def _build_system_prompt(catalog: dict[str, Any]) -> str:
             metric_lines[-1] += f"  dims: {dims}"
     metrics_str = "\n".join(metric_lines)
 
-    return f"""You are a governed-metric router.  Your job is to map a natural-language question to exactly one metric from the governed catalog below.
+    return f"""You are a governed-metric router. Map a natural-language question to the governed catalog below, OR decline when no single governed metric answers it. Declining correctly matters as much as answering: NEVER invent a metric, and never stretch an unrelated metric to fit.
 
 Supported domains: {domain_list}
 
+You MUST return a "classification" that is exactly one of:
+- "answered": exactly ONE metric in the catalog below clearly measures what is asked.
+- "ambiguous": the subject is a supported domain, but TWO OR MORE catalog metrics could each plausibly answer it and you cannot choose one without more detail.
+- "unknown_metric": the subject is a supported domain, but NO catalog metric measures the requested concept (e.g. a rate, cost, ratio, growth %, cache-hit, or "remaining" figure the catalog does not contain).
+- "unsupported_domain": the question is about a subject area NOT in the supported domains above (e.g. HR/headcount, customer-support tickets, marketing spend).
+
 Rules:
-1. Return EXACTLY ONE metric name from the catalog.  If the question matches multiple metrics, return the most relevant one and set "ambiguous": false.
-2. If NO metric in the catalog answers the question (e.g. customer-service questions, headcount), return "metrics": [].
-3. Valid dimensions are listed per metric.  Only include dimensions that appear in the metric's list.
-4. Time phrases like "last week", "this month", "last quarter" should be preserved as-is in time_range.
-5. domain must be one of: {domain_list} or "unknown".
+1. answered → put exactly one catalog metric name in "metrics". Pick the SINGLE best match; do not decline just because the wording is loose or informal.
+1b. Canonical defaults apply ONLY when the question NAMES a catalog measure family. bare "revenue"/"total revenue" -> the NET revenue metric; "total tokens"/"token usage" -> the aggregate total-tokens metric — do NOT call these ambiguous. But NEVER impose a default on a VAGUE proxy word that is not itself a named catalog measure: "value", "worth", "amount we got", "benefit", "how much did we get out of" with no named measure -> you cannot verify which metric is meant -> classification "unknown_metric" (do NOT guess revenue). Reserve "ambiguous" for two genuinely different NAMED measures (e.g. a rate vs a count, or two distinct utilization measures).
+1c. A BREAKDOWN is NOT a SCOPE FILTER — separate them, because they carry different risk.
+   - BREAKDOWN = group/segment the result ("by product line", "per model", "by region"). Put breakdowns in "dimensions". An unsupported breakdown is dropped by the server and the metric's TOTAL is still a correct answer, so a breakdown NEVER makes a question unknown — still return the metric.
+   - SCOPE FILTER = restrict WHICH rows are counted ("from marketplace", "for the US", "billed to the Customer Success team", "on the Pro plan"). A scope filter CHANGES the number, so it must NEVER be silently ignored. Put EVERY scope filter in "filters" as {{"field": <catalog dimension name or null>, "value": <the entity/value>, "phrase": <verbatim span>}}. Name "field" ONLY when you are confident a catalog dimension of the CHOSEN metric expresses it AND the entity type matches (an internal team/department is NOT a customer account); otherwise set "field" to null. Set classification by the MEASURE alone (answered if a metric measures it) — the server verifies filter coverage and will DECLINE if a scope filter cannot be governed. Do NOT fold an unexpressible scope filter into an "answered" total yourself.
+   - Decline as unknown_metric when the core MEASURE itself is absent from the catalog (e.g. "refund rate", "cache hit rate", "profit margin").
+2. ambiguous → put the 2+ candidate catalog metric names in "metrics" and set "ambiguous": true.
+3. unknown_metric → "metrics": [] and set "domain" to the supported domain the question belongs to.
+4. unsupported_domain → "metrics": [] and set "domain" to the real out-of-catalog subject (e.g. "HR", "Support").
+5. Use metric names spelled EXACTLY as in the catalog. Only include dimensions listed for the chosen metric.
+6. Preserve time phrases ("last week", "this month", "last quarter") verbatim in "time_range".
 
 Catalog:
 {metrics_str}
 
+Examples (question -> JSON):
+"What was total net revenue last quarter?" -> {{"classification":"answered","metrics":["total_net_revenue"],"dimensions":[],"time_range":"last quarter","domain":"Revenue","ambiguous":false}}
+"Show me prompt tokens used this week by model" -> {{"classification":"answered","metrics":["total_input_tokens"],"dimensions":["model_variant"],"time_range":"this week","domain":"Token usage","ambiguous":false}}
+"What was total token usage yesterday?" -> {{"classification":"answered","metrics":["total_tokens_consumed"],"dimensions":[],"time_range":"yesterday","domain":"Token usage","ambiguous":false}}
+"What is our recurring revenue this month?" -> {{"classification":"unknown_metric","metrics":[],"dimensions":[],"time_range":"this month","domain":"Revenue","ambiguous":false}}
+"What is the cache hit rate for tokens this month?" -> {{"classification":"unknown_metric","metrics":[],"dimensions":[],"time_range":"this month","domain":"Token usage","ambiguous":false}}
+"What is our quota utilization percentage by model?" -> {{"classification":"ambiguous","metrics":["peak_rpm_utilization","peak_tpm_utilization"],"dimensions":["model_variant"],"time_range":"","domain":"Quota","ambiguous":true}}
+"What is the employee headcount by department?" -> {{"classification":"unsupported_domain","metrics":[],"dimensions":[],"time_range":"","domain":"HR","ambiguous":false}}
+"How many customer support tickets were opened yesterday?" -> {{"classification":"unsupported_domain","metrics":[],"dimensions":[],"time_range":"yesterday","domain":"Support","ambiguous":false,"filters":[]}}
+"Show me net revenue by product line for this year" -> {{"classification":"answered","metrics":["total_net_revenue"],"dimensions":[],"time_range":"this year","domain":"Revenue","ambiguous":false,"filters":[]}}  (a BREAKDOWN the catalog lacks -> dropped, total still answers)
+"How much value did we get from marketplace last year?" -> {{"classification":"unknown_metric","metrics":[],"dimensions":[],"time_range":"last year","domain":"Revenue","ambiguous":false,"filters":[]}}  (vague measure "value" -> do not guess revenue)
+"How many tokens did we bill to the Customer Success team?" -> {{"classification":"answered","metrics":["total_tokens_consumed"],"dimensions":[],"time_range":"","domain":"Token usage","ambiguous":false,"filters":[{{"field":null,"value":"Customer Success team","phrase":"billed to the Customer Success team"}}]}}  (scope filter on an internal team, not a customer account -> field null; server declines)
+
 Return ONLY valid JSON with this exact structure (no markdown, no explanation):
 {{
+  "classification": "answered | ambiguous | unknown_metric | unsupported_domain",
   "metrics": ["metric_name"] or [],
   "dimensions": ["dim_name", ...] or [],
+  "filters": [{{"field": "dimension_name or null", "value": "restriction value", "phrase": "verbatim span"}}] or [],
   "time_range": "last week" or "this month" or "last quarter" or "" or a free-form string,
-  "domain": "one of the supported domains or unknown",
+  "domain": "a supported domain, or the real out-of-catalog subject",
   "ambiguous": false
 }}"""
 
@@ -90,6 +117,7 @@ def _call_ollama(
         ],
         "stream": False,
         "format": "json",
+        "options": {"temperature": 0, "seed": int(os.environ.get("LLM_SEED", "42"))},
     }
 
     try:
@@ -125,6 +153,13 @@ def _call_openai(
             {"role": "user", "content": prompt},
         ],
         "response_format": {"type": "json_object"},
+        # Determinism for the governed selector: greedy decoding + fixed seed so
+        # metric selection is reproducible run-to-run. A governed metric has one
+        # exact definition; the selector must not vary its choice by sampling.
+        # (seed is honored by OpenAI-compatible endpoints that support it and
+        # ignored by those that don't; temperature 0 is the load-bearing pin.)
+        "temperature": 0,
+        "seed": int(os.environ.get("LLM_SEED", "42")),
     }
 
     try:
@@ -161,6 +196,7 @@ def _call_anthropic(
     body: dict[str, Any] = {
         "model": model or DEFAULT_ANTHROPIC_MODEL,
         "max_tokens": 1024,
+        "temperature": 0,  # greedy decoding — deterministic governed selection
         "system": _build_system_prompt(catalog),
         "messages": [{"role": "user", "content": prompt}],
     }
