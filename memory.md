@@ -32,16 +32,18 @@
 
 ## Next Actions (for next session)
 
-### ▶ NEXT SESSION KICKOFF — RANKING/ARGMAX GUARD (paste-ready)
+### ✅ DONE — RANKING/ARGMAX GUARD (committed `d3d5747`, 2026-07-10, gate-2 passed)
 
-The immediate next increment. Human approved sequencing it after `3a7dab2`.
+The named residual from `3a7dab2` is shipped. See Progress Note below for the full arc.
 
-- **WHAT:** build the ranking/argmax guard — the named residual from commit `3a7dab2`.
-- **WHY:** "which/most/top/highest/lowest" questions (e.g. "which deployment used the most tokens", eval row 17) return a grand TOTAL across all groups instead of a ranking — a correct number to a *different* question. Neither the filter-coverage guard nor the prompt catches it (not a scope filter, not out-of-catalog).
-- **BAR (unchanged):** never-wrong-on-governed-data — correct or abstain, never confidently wrong; coverage-drop accepted.
-- **FIX SHAPE:** detect superlative/argmax intent → force a group-by breakdown so the answer actually ranks, OR abstain-and-clarify. ai-architect's call which.
-- **THE PLAY (same as `3a7dab2`):** (1) ai-architect designs argmax detector + prompt change, defines payload contract + eval expectation; (2) if a code guard is needed, route senior-software-engineer against that contract (ai-architect owns prompt, SSE owns code — no absorbing); (3) verify as one — 3× seed-pinned (temp0/seed42), precision→toward 100%, no regression on passing rows, gate-1 still fails a deliberately-wrong row (assertions under `defaultTest.assert`); (4) numbers → human gate-2 → commit as ONE, scoped.
-- **GUARDRAILS:** do NOT bundle the parked 6-file dbt RI fix or `docs/03.PRD.md` (both still modified in tree) — scope the commit to argmax-guard files only. Present a numbered task plan with estimates and wait for human approval before changing anything. Backend bring-up recipe is below.
+- **Built:** prompt emits a `rank` object `{direction,by_field,phrase}` (ai-architect); deterministic `check_rank_coverage`+`rank_group_by`+`apply_argmax` guard abstains on ungoverned rank-dim, else forces group-by, sorts, returns true argmax/argmin (SSE, 18/18 unittests). Row 17 relabeled `ambiguous`→`unknown_metric`/abstain.
+- **3× seed-pinned result:** 3 argmax rows correct in ALL 3 runs (deployment abstains; model=45810 llama; customer=13653 ACC008). Precision-on-answered ~96% (↑84%), category ~95%, hallucination 0 on governed data, coverage ~25-33%.
+- **Scope:** commit d3d5747 = 6 argmax files only; parked 6-file dbt RI fix + `docs/03.PRD.md` deliberately still uncommitted in tree.
+
+### ▶ NEXT INCREMENT — human to pick from the backlog
+
+No single human-mandated next increment queued. Candidates (Outstanding list below): clarify-and-continue multi-turn (FR4, ~10-12 agent-hrs, needs solutions-architect one-way-door on non-terminal `ambiguous`); 8-family semantic-layer rebuild; parked 6-file dbt RI fix commit-vs-revert decision; "default-collision wrong-default" residual; retrieval-quality eval; TR12 wording reconciliation.
+- **GUARDRAILS (still live):** parked 6-file dbt RI fix + `docs/03.PRD.md` remain modified in tree — do NOT bundle into an unrelated commit. Present a numbered task plan with estimates and wait for human approval before changing anything. Backend bring-up recipe is below.
 
 Read this chart first. NOTE: `git` writes from THIS session worked cleanly with no stale locks (commit `3a67716`) — the old device-bridge lock warning did not bite; TPM can commit directly. The full query path WORKS end-to-end; the truthful TR12 baseline is **44% overall / 52% category / 4-of-6 metric (deepseek-v4-pro)**. The bottleneck is guardrails, not the model.
 
@@ -60,6 +62,23 @@ Read this chart first. NOTE: `git` writes from THIS session worked cleanly with 
 8. **Retrieval-quality eval** (Wave 2) — ai-architect, not started. **TRD TR12 wording** reconciliation — solutions-architect (flagged).
 
 ## Progress Notes
+
+### 2026-07-10 - tpm-agent-amazon @ cli — RANKING/ARGMAX GUARD shipped (committed `d3d5747`, gate-2 passed)
+
+**Situation:** Built the named residual from `3a7dab2` — superlative questions ("which/most/top/highest/lowest") returned a grand TOTAL across groups instead of a ranking. Ran THE PLAY end to end; committed as one scoped increment.
+
+**Arc:**
+1. **Task 1 (TPM verify):** reproduced the failure live — row 17 "which deployment used the most tokens" → `answered`/`value:374758`/`dimensions:[]` (grand total). Fixture already expected `ambiguous`, so eval already failed it (banked as gate-1 evidence).
+2. **ai-architect design (gate-1 pass):** hybrid keyed on rank-dim governance. Prompt emits a `rank` object `{direction,by_field,phrase}`; governed rank-dim → rank & return argmax, ungovernable → abstain. KEY finding via real runs: even the GOVERNED case was confidently wrong — "which model" grouped correctly but reported `rows[0]`=42929 when true argmax=45810 (mf doesn't sort). So a code guard is MANDATORY, not prompt-only.
+3. **Parallel build:** ai-architect (prompt `llm_client.py` + eval `domain_questions.csv`/`eval_config.yaml`) ‖ SSE (`check_rank_coverage`+`rank_group_by`+`apply_argmax` in `query_translator.py`, mirrors filter guard, "peak" excluded from lexical backstop, 18/18 unittests). Disjoint files, frozen contract.
+4. **Integration caught 2 defects the paper cross-check missed** (this is why "verify as one" exists): (a) model emitted `rank` as a bare STRING not the object → guard fail-safe-abstained → over-abstention on the 2 answerable rows; routed back to ai-architect (owns prompt), fixed to emit the object, guard unchanged. (b) fixture "which customer...last month" hit the empty December window (token-by-account_id data lands in January only) → one-line fixture fix to "last week".
+5. **3× seed-pinned re-measure (temp0/seed42):** 3 argmax rows correct in ALL 3 runs — deployment abstains, model=45810/llama, customer=13653/ACC008. Precision-on-answered ~96% (↑from 84%), category ~95%, hallucination 0 on governed data, coverage ~25-33%.
+
+**Mechanism win:** contracts that "agree on paper" still fail at integration — the shared-backend restart + combined re-measure is the gate that caught the string-vs-object mismatch. Kept ownership clean throughout (ai-architect owned prompt+eval, SSE owned code; TPM owned restart+re-measure+commit, absorbed nothing).
+
+**Determinism caveat (unchanged):** non-argmax rows "completion tokens last month" + "quota per deployment this week" JITTER answered↔ambiguous↔unknown across runs (each passes ≥1 of 3), always failing toward SAFE abstention, never a wrong answer. deepseek-v4-pro non-determinism, not an argmax regression. "completion tokens last month" also hits the empty-Dec window.
+
+**Commit `d3d5747` scoped to 6 files:** `llm_client.py`, `query_translator.py`, `eval/domain_questions.csv`, `eval/eval_config.yaml`, `tests/test_check_rank_coverage.py`, `eval/prefix_baseline_20260710-121707.json`. Parked 6-file dbt RI fix + `docs/03.PRD.md` deliberately EXCLUDED (still modified in tree).
 
 ### 2026-07-10 - tpm-agent-amazon @ cli — never-wrong-on-governed-data increment built (uncommitted, awaiting final re-measure + gate-2)
 
