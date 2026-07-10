@@ -1,0 +1,70 @@
+# Conversational-BI backend — pinned dependency set
+# Python: 3.11 (verified on 3.11.15). See README.md for the boot recipe.
+#
+# Versions are the exact set resolved and verified against a fresh venv:
+# `pip install -r requirements.txt` succeeds, `mf --version` resolves inside
+# the venv, and GET /health returns 200 with "catalog_loaded": true.
+#
+# Every top-level package below is imported directly by conversational-bi/backend/*.py.
+# Transitive dependencies (starlette, spacy's thinc, dbt-core, langchain-core,
+# openai, etc.) are resolved by pip from these pins.
+
+# ── web framework / server (backend/main.py) ────────────────────────────────
+fastapi==0.139.0
+uvicorn[standard]==0.51.0
+
+# ── HTTP client (backend/llm_client.py, litellm_gateway.py, agent_graph.py) ──
+httpx==0.28.1
+
+# ── data models / config (all modules) ──────────────────────────────────────
+pydantic==2.13.4
+
+# ── YAML catalog reader (backend/catalog_builder.py) ─────────────────────────
+PyYAML==6.0.3
+
+# ── OpenTelemetry: API + SDK + OTLP/HTTP exporter + FastAPI instrumentation ──
+#    main.py:30 imports the OTLP HTTP exporter unconditionally at module load,
+#    so the exporter package MUST be present even when OTEL_ENABLED is unset.
+opentelemetry-api==1.43.0
+opentelemetry-sdk==1.43.0
+opentelemetry-exporter-otlp-proto-http==1.43.0
+opentelemetry-instrumentation-fastapi==0.64b0
+
+# ── LLM gateway (backend/litellm_gateway.py) ─────────────────────────────────
+litellm==1.91.1
+
+# ── .env loader (backend/main.py calls load_dotenv() at import) ──────────────
+#    Makes provider config in conversational-bi/.env reproducible without
+#    exporting vars in the launching shell.
+python-dotenv==1.2.2
+
+# ── evidence retriever keyword index (backend/evidence_retriever.py) ─────────
+llama-index-core==0.14.23
+
+# ── agent graph (backend/agent_graph.py imports langgraph unconditionally) ───
+#    langgraph pulls langchain-core==1.4.9 transitively; backend imports no
+#    top-level `langchain` package directly.
+langgraph==1.2.8
+
+# ── PII redaction guardrail (backend/guardrails.py) ──────────────────────────
+#    main.py:41 instantiates PIIRedactor() at import time, which constructs
+#    Presidio's AnalyzerEngine() and loads the default spaCy model below.
+presidio-analyzer==2.2.363
+presidio-anonymizer==2.2.363
+spacy==3.8.13
+
+# ── spaCy model required by Presidio's default NLP engine (en_core_web_lg) ───
+#    Without this the app cannot even IMPORT (AnalyzerEngine() raises at boot).
+#    Pinned via the official wheel so `pip install -r` is fully self-contained.
+https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl
+
+# ── MetricFlow CLI — provides the `mf` command the /health check shells out to
+#    (main.py:_check_mf_cli runs `mf --version`). Do NOT rely on the system mf;
+#    this pin makes `mf` resolve INSIDE the venv.
+dbt-metricflow==0.13.0
+
+# ── Postgres adapter for dbt/MetricFlow (profiles.yml uses `type: postgres`) ──
+#    Without this, `mf query` fails: "Could not find adapter type postgres!"
+#    (ModuleNotFoundError: dbt.adapters.postgres). Additive to the pinned
+#    dbt-core 1.11.x; pulls psycopg2-binary transitively.
+dbt-postgres==1.10.2

@@ -168,16 +168,28 @@ def validate_dimensions(
 
 def resolve_time_range(
     time_str: str | None, time_override: str | None = None
-) -> str:
-    """Resolve a relative time phrase against the current UTC clock.
+) -> tuple[str | None, str | None]:
+    """Resolve a relative time phrase into an absolute ``(start, end)`` ISO date pair.
 
-    ``time_override`` — if set (as ``YYYY-MM-DD`` or ISO date via the
-    ``TIME_OVERRIDE`` env var) — replaces "now" for demo/testing.
+    ``time_override`` — if set (as ``YYYY-MM-DD`` via the argument or the
+    ``TIME_OVERRIDE`` env var) — replaces "now" for demo/testing. The argument
+    takes precedence over the env var.
 
-    Returns a MetricFlow-compatible ``WHERE`` clause fragment or empty string.
+    Returns
+    -------
+    tuple[str | None, str | None]
+        ``(start_iso, end_iso)`` as ``YYYY-MM-DD`` strings, or ``(None, None)``
+        when there is no usable time filter.
+
+    Defect #7 — MetricFlow rejects a bare ``metric_time between ...`` ``--where``
+    clause (``metric_time`` is not a valid column reference, and the
+    ``TimeDimension`` grain rarely matches the metric's aggregation grain). The
+    grain-agnostic ``--start-time`` / ``--end-time`` CLI flags are the supported
+    path, so this function now yields absolute dates for the command builder to
+    pass as those flags rather than a WHERE fragment.
     """
     if not time_str or not time_str.strip():
-        return ""
+        return (None, None)
 
     # determine reference "now"
     override = time_override or os.environ.get("TIME_OVERRIDE")
@@ -185,16 +197,23 @@ def resolve_time_range(
         try:
             now = datetime.date.fromisoformat(override)
         except ValueError:
-            logger.warning("Invalid TIME_OVERRIDE '%s', falling back to real clock", override)
+            logger.warning("Invalid time override '%s', falling back to real clock", override)
             now = datetime.date.today()
     else:
         now = datetime.date.today()
 
     ts = time_str.strip().lower()
 
-    # ── absolute-date passthrough (e.g. "metric_time between '2026-01-01' and '2026-01-31'") ──
-    if re.match(r"^metric_time\s+between\s+", ts):
-        return ts
+    # ── absolute-date passthrough ──
+    # Matches both the legacy WHERE-style form ("metric_time between '2026-01-01'
+    # and '2026-01-31'") and the bare form the LLM commonly emits
+    # ("between 2025-11-01 and 2025-12-31"), with or without quotes.
+    abs_match = re.match(
+        r"^(?:metric_time\s+)?between\s+'?(\d{4}-\d{2}-\d{2})'?\s+and\s+'?(\d{4}-\d{2}-\d{2})'?",
+        ts,
+    )
+    if abs_match:
+        return (abs_match.group(1), abs_match.group(2))
 
     # ── relative phrases ────────────────────────────────────────────────
     if ts in ("this week", "current week"):
@@ -241,13 +260,13 @@ def resolve_time_range(
             start = now - datetime.timedelta(days=n)
             end = now
         except (ValueError, IndexError):
-            return ""
+            return (None, None)
     else:
-        logger.info("Unrecognised time phrase '%s' – leaving as-is", time_str)
-        return time_str
+        logger.info("Unrecognised time phrase '%s' – no time filter applied", time_str)
+        return (None, None)
 
-    # Build MetricFlow WHERE clause (ISO date format)
-    return f"metric_time between '{start.isoformat()}' and '{end.isoformat()}'"
+    # Absolute ISO date pair for MetricFlow --start-time / --end-time flags.
+    return (start.isoformat(), end.isoformat())
 
 
 # ── MetricFlow command builder ────────────────────────────────────────────
@@ -256,7 +275,8 @@ def resolve_time_range(
 def build_mf_query_command(
     metric_names: list[str],
     dimensions: list[str],
-    time_where_clause: str,
+    start_time: str | None = None,
+    end_time: str | None = None,
 ) -> list[str]:
     """Build the ``mf query`` command and argument list.
 
@@ -266,9 +286,11 @@ def build_mf_query_command(
         Exactly one metric name for non-ambiguous queries.
     dimensions
         Validated dimension names to group by.
-    time_where_clause
-        A WHERE clause fragment (e.g. ``"metric_time between '...' and '...'"``)
-        or empty string.
+    start_time, end_time
+        Absolute ``YYYY-MM-DD`` bounds (Defect #7). Emitted as the
+        grain-agnostic ``--start-time`` / ``--end-time`` flags instead of a
+        ``--where metric_time between ...`` clause, which MetricFlow rejects.
+        Either may be ``None`` to leave that bound open.
 
     Returns
     -------
@@ -283,8 +305,10 @@ def build_mf_query_command(
     cmd.extend(["--group-by", "metric_time"])
     for dim in dimensions:
         cmd.extend(["--group-by", dim])
-    if time_where_clause:
-        cmd.extend(["--where", time_where_clause])
+    if start_time:
+        cmd.extend(["--start-time", start_time])
+    if end_time:
+        cmd.extend(["--end-time", end_time])
     return cmd
 
 
@@ -316,28 +340,52 @@ def execute_mf_query(cmd: list[str]) -> tuple[int, str, str]:
         return (1, "", str(exc))
 
 
-def parse_mf_output(stdout: str) -> list[dict[str, Any]]:
-    """Parse MetricFlow tabular output into a list of row dicts.
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+_SEPARATOR_RE = re.compile(r"^[\s|+-]*-{2,}[\s|+-]*$")
 
-    Currently handles CSV output (``--format csv``).  Falls back to splitting
-    on whitespace for other formats.
+
+def parse_mf_output(stdout: str) -> list[dict[str, Any]]:
+    """Parse the MetricFlow CLI's whitespace-aligned table into row dicts.
+
+    The ``mf query`` default output looks like::
+
+        ⠋ Initiating query…✔ Success 🦄 - query completed after 0.06 seconds
+        metric_time__week      total_net_revenue
+        -------------------  -------------------
+        2025-10-27T00:00:00              1.8143
+        ...
+
+    So this: strips ANSI/carriage-return spinner noise, locates the dashed
+    separator line, takes the line above it as the header and the lines below as
+    data rows, and splits each on runs of 2+ spaces (columns are space-padded).
+    Column keys are the raw MetricFlow headers — note the group-by column is
+    grain-suffixed (``metric_time__week``) while the metric column is the bare
+    metric name (``total_net_revenue``), so ``row[metric_name]`` resolves.
+
+    Returns ``[]`` for empty / header-only output (TR10: zero rows is still
+    ``answered``).
     """
-    if not stdout.strip():
+    if not stdout or not stdout.strip():
         return []
 
-    lines = stdout.strip().splitlines()
+    # Drop ANSI escapes and collapse carriage-return progress redraws.
+    cleaned = _ANSI_RE.sub("", stdout).replace("\r", "\n")
+    lines = [ln for ln in cleaned.splitlines() if ln.strip()]
     if len(lines) < 2:
         return []
 
-    # assume CSV header + rows
-    header = [h.strip() for h in lines[0].split(",")]
+    # Find the dashed separator; the header is the line immediately above it.
+    sep_idx = next((i for i, ln in enumerate(lines) if _SEPARATOR_RE.match(ln)), None)
+    if sep_idx is None or sep_idx == 0:
+        return []
+
+    header = re.split(r"\s{2,}", lines[sep_idx - 1].strip())
     rows: list[dict[str, Any]] = []
-    for line in lines[1:]:
-        if not line.strip():
+    for line in lines[sep_idx + 1 :]:
+        values = re.split(r"\s{2,}", line.strip())
+        if not values or (len(values) == 1 and not values[0]):
             continue
-        values = [v.strip() for v in line.split(",")]
-        row = dict(zip(header, values, strict=False))
-        rows.append(row)
+        rows.append(dict(zip(header, values, strict=False)))
     return rows
 
 
@@ -408,12 +456,25 @@ def process_question(
     valid_dims = validate_dimensions(proposed_metrics, proposed_dims, catalog)
 
     # ── 6. TR6: time resolution ────────────────────────────────────────
-    time_clause = resolve_time_range(llm_result.get("time_range", ""), time_override)
-    logger.info("Resolved time: '%s' → '%s'", llm_result.get("time_range"), time_clause)
+    start_time, end_time = resolve_time_range(llm_result.get("time_range", ""), time_override)
+    logger.info(
+        "Resolved time: '%s' → start=%s end=%s",
+        llm_result.get("time_range"),
+        start_time,
+        end_time,
+    )
+    if start_time and end_time:
+        time_range_used = f"{start_time} to {end_time}"
+    elif start_time:
+        time_range_used = f"from {start_time}"
+    elif end_time:
+        time_range_used = f"through {end_time}"
+    else:
+        time_range_used = "all available"
 
     # ── 7. Build and execute MetricFlow query ──────────────────────────
     try:
-        cmd = build_mf_query_command(proposed_metrics, valid_dims, time_clause)
+        cmd = build_mf_query_command(proposed_metrics, valid_dims, start_time, end_time)
     except ValueError as exc:
         return _system_error(str(exc))
 
@@ -434,6 +495,6 @@ def process_question(
         metric=proposed_metrics[0],
         value=value,
         dimensions=valid_dims,
-        time_range_used=time_clause,
+        time_range_used=time_range_used,
         rows=rows,
     )

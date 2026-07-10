@@ -4,7 +4,10 @@ resource_utilization_postgres:
   outputs:
     prod:
       type: postgres
-      host: postgres
+      # Defaults to the docker-internal hostname 'postgres' so the in-container
+      # Airflow path is unchanged. Host-run consumers (e.g. the conversational-BI
+      # backend's `mf` subprocess) set DBT_HOST=localhost to reach the DB.
+      host: "{{ env_var('DBT_HOST', 'postgres') }}"
       port: 5432
       user: mds_user
       password: mds_password

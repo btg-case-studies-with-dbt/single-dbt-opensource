@@ -52,6 +52,46 @@ def _load_metric_domain_map() -> dict[str, str]:
     return domain_map
 
 
+# Governance markers: a dictionary row whose status/approved_status contains any
+# of these tokens is a retired variant and must NOT be offered to the LLM.
+_RETIRED_STATUS_TOKENS = ("deprecat", "absorb", "retired", "superseded")
+
+
+def _load_approved_metric_names() -> set[str]:
+    """Return the governed allowlist of metric names from the dictionary CSV.
+
+    The metric dictionary (``docs/10.METRIC_DICTIONARY.csv``) is the single
+    source of truth for which metrics are canonical vs. retired. Every listed
+    ``metric_name`` is approved unless a status/approved_status column explicitly
+    marks it deprecated/absorbed. Any metric in the semantic manifest that is
+    *absent* from this allowlist is a retired variant (an absorbed or renamed
+    name) and is excluded from the catalog served to the model.
+
+    Returns an empty set only when the dictionary is missing/unreadable; callers
+    treat an empty allowlist as "governance unavailable" and skip filtering
+    rather than serving zero metrics.
+    """
+    approved: set[str] = set()
+    path = Path(DICTIONARY_PATH)
+    if not path.exists():
+        logger.warning(
+            "Metric dictionary not found at %s – governance allowlist unavailable",
+            path,
+        )
+        return approved
+    with open(path, newline="") as f:
+        for row in csv.DictReader(f):
+            name = row.get("metric_name", "").strip()
+            if not name:
+                continue
+            status = f"{row.get('status', '')} {row.get('approved_status', '')}".lower()
+            if any(tok in status for tok in _RETIRED_STATUS_TOKENS):
+                continue
+            approved.add(name)
+    logger.info("Governance allowlist: %d approved metric names loaded", len(approved))
+    return approved
+
+
 def _load_dimension_catalog() -> tuple[list[dict[str, Any]], dict[str, list[str]]]:
     """Load full dimension definitions and per-metric valid dimensions from the YAML catalog.
 
@@ -131,16 +171,33 @@ def build_catalog(
     # cross-reference domain tags from CSV
     domain_map = _load_metric_domain_map()
 
+    # governance allowlist: only canonical (non-retired) metrics are served
+    approved_names = _load_approved_metric_names()
+    governance_active = bool(approved_names)
+    if not governance_active:
+        logger.warning(
+            "Governance allowlist empty – serving ALL manifest metrics unfiltered. "
+            "Retired/absorbed variants may be exposed to the model."
+        )
+
     # dimension info from YAML catalog
     all_dimensions, metric_dims = _load_dimension_catalog()
 
     # ── build metrics list ────────────────────────────────────────────
     domain_set: set[str] = set()
     metrics: list[dict[str, Any]] = []
+    excluded: list[str] = []
 
     for m in manifest.get("metrics", []):
         name: str = m.get("name", "")
         if not name:
+            continue
+
+        # governance filter: skip metrics absent from the approved allowlist
+        # (absorbed/renamed/deprecated variants). Skipped only when governance
+        # is active so a missing dictionary never yields an empty catalog.
+        if governance_active and name not in approved_names:
+            excluded.append(name)
             continue
 
         # domain: CSV wins, then manifest meta, then "unknown"
@@ -172,6 +229,12 @@ def build_catalog(
         len(metrics),
         len(all_dimensions),
     )
+    if excluded:
+        logger.info(
+            "Governance filter excluded %d retired variant(s) from LLM catalog: %s",
+            len(excluded),
+            ", ".join(sorted(excluded)),
+        )
     return catalog
 
 

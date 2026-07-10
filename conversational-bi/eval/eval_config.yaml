@@ -1,6 +1,17 @@
 # promptfoo eval config — Governed Metric Execution Architecture
 # Tests the five-category response contract via POST /query.
 # Usage: promptfoo eval --config eval/eval_config.yaml
+#
+# Response contract (from backend/query_translator.py::process_question):
+#   all categories        -> { "category": <str>, ... }
+#   answered              -> also { "metric", "value", "dimensions", "time_range", "rows" }
+#   unknown_metric        -> also { "message", "proposed_metrics" }
+#   ambiguous             -> also { "message", "proposed_metrics" }
+#   unsupported_domain    -> also { "message", "domain" }
+#   system_error          -> also { "message", "detail" }
+# Assertions therefore read `category` and `metric` from the FULL response
+# object. No output reduction (postprocess) is applied, so every assertion
+# sees the complete JSON body.
 
 prompts:
   # prompt is injected via the API body; system prompt lives server-side
@@ -14,36 +25,63 @@ providers:
         Content-Type: "application/json"
       body:
         question: "{{question}}"
+        # Pin the eval's effective "now" into the revenue data window
+        # (metric_time 2025-10-20 → 2026-01-19). Without this, relative-time
+        # phrasing ("last quarter"/"last month") resolves past the data and
+        # returns empty, so `answered` questions would not surface real values.
+        # 2026-01-15 → "last month"=Dec 2025, "last quarter"=Q4 2025 (in-window).
+        # Precedence in backend: body > env TIME_OVERRIDE > real clock.
+        time_override: "2026-01-15"
 
-tests: "domain_questions.jsonl"
+tests: "domain_questions.csv"
+
+# NOTE: no defaultTest.options.postprocess. Reducing output to a bare string
+# was the defect — it hid the metric field from the TR12 assertion. Assertions
+# below parse the raw JSON response themselves (robust to string- or
+# object-typed `output` across promptfoo versions).
+#
+# Assertions MUST live under defaultTest.assert (NOT a root-level `assert:`).
+# For tests loaded from an external file (CSV/JSONL), promptfoo applies global
+# assertions ONLY from defaultTest.assert; a root-level `assert:` is silently
+# ignored, causing every row to pass vacuously with reason "No assertions".
 
 defaultTest:
-  options:
-    postprocess: |
-      // Extract the 'category' field from the JSON response for assertions below
-      const parsed = JSON.parse(output);
-      return parsed.category;
+  assert:
+    # ── Category routing ──────────────────────────────────────────────────────
+    # The five-category router must place the question in the expected bucket.
+    - type: "javascript"
+      value: |
+        const r = typeof output === 'string' ? JSON.parse(output) : output;
+        return r.category === context.vars.expected_category;
 
-assert:
-  # Primary category match
-  - type: "equals"
-    value: "{{expected_category}}"
-    # Metric matches when expected
-  - type: "javascript"
-    condition: |
-      // If expected_metric is set, verify it appears in the response
-      const expectedMetric = vars?.expected_metric;
-      if (!expectedMetric) return true;
-      const parsed = JSON.parse(output);
-      return parsed.metric === expectedMetric;
-    assert_fail_message: "Expected metric {{expected_metric}} but got {{output.metric}}"
+    # ── TR12: metric selection (load-bearing) ─────────────────────────────────
+    # When the row declares an expected_metric, the selected metric in the
+    # response MUST equal it exactly. When no metric is expected (null on
+    # ambiguous / unknown_metric / unsupported_domain rows), the assertion is
+    # not applicable and passes.
+    - type: "javascript"
+      value: |
+        const expected = context.vars.expected_metric;
+        // Not applicable when the row has no expected metric.
+        if (expected === null || expected === undefined || expected === '' || expected === 'null') {
+          return true;
+        }
+        const r = typeof output === 'string' ? JSON.parse(output) : output;
+        if (r.metric === expected) return true;
+        return {
+          pass: false,
+          score: 0,
+          reason: `TR12 metric mismatch: expected '${expected}', got '${r.metric}'`,
+        };
 
-  # Domain match when expected
-  - type: "javascript"
-    condition: |
-      const expectedDomain = vars?.domain;
-      if (!expectedDomain) return true;
-      const parsed = JSON.parse(output);
-      return parsed.domain === expectedDomain || true;  # domain info may be in metadata, not final response shape
+  # ── Domain: intentionally NOT asserted ────────────────────────────────────
+  # The `domain` field in domain_questions.jsonl is a test-organization tag
+  # used for domain-balanced coverage/slicing, NOT a field of the /query
+  # response contract. The response carries `domain` only on the
+  # `unsupported_domain` category, and there it is the LLM's classification
+  # rather than the row tag. Asserting it would add no TR12 signal and would
+  # produce false failures on answered/ambiguous/unknown_metric rows (which
+  # have no `domain` field). The prior `|| true` assertion could never fail;
+  # it is removed rather than left dead.
 
 description: "BTG Conversational BI — Five-category eval (25 domain-balanced questions)"

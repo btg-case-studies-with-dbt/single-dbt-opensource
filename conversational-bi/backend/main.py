@@ -33,9 +33,16 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
-from . import catalog_builder
-from . import litellm_gateway
-from .guardrails import ContentFilter, PIIRedactor
+# Load .env into os.environ BEFORE any module-level env reads (OTEL_ENABLED at
+# line 85 below) or env-reading imports (litellm_gateway builds config from env;
+# llm_client reads LLM_PROVIDER / OLLAMA_MODEL at its — late — import).
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from . import catalog_builder  # noqa: E402
+from . import litellm_gateway  # noqa: E402
+from .guardrails import ContentFilter, PIIRedactor  # noqa: E402
 
 # ── guardrails ─────────────────────────────────────────────────────────────
 _pii_redactor = PIIRedactor()
@@ -146,11 +153,20 @@ class _NoopSpan:
         pass
 
 
-_noop_tracer_ctx = _NoopSpan()
+class _NoopTracer:
+    """Stand-in for an OpenTelemetry tracer when OTEL is disabled.
+
+    Exposes ``start_as_current_span`` so ``with tracer.start_as_current_span(...)``
+    works identically to the real tracer; it yields a ``_NoopSpan`` (itself a
+    context manager) that the downstream ``isinstance(span, _NoopSpan)`` guard
+    recognises and skips real span-attribute writes for.
+    """
+
+    def start_as_current_span(self, name: str) -> _NoopSpan:  # noqa: ARG002
+        return _NoopSpan()
 
 
-def _noop_tracer() -> _NoopSpan:  # type: ignore[misc]
-    return _noop_tracer_ctx
+_noop_tracer = _NoopTracer()
 
 
 # ── audit log helper ──────────────────────────────────────────────────────
@@ -277,6 +293,15 @@ async def query(request: Request) -> dict[str, Any]:
             )
         else:
             # get LLM selection via native client (default path)
+            _native_default_model = {
+                "openai": llm_client.DEFAULT_OPENAI_MODEL,
+                "anthropic": llm_client.DEFAULT_ANTHROPIC_MODEL,
+            }.get(config_provider, llm_client.DEFAULT_OLLAMA_MODEL)
+            logger.info(
+                "Query routed to native LLM client: provider=%s model=%s",
+                config_provider,
+                model or _native_default_model,
+            )
             llm_result = llm_client.select_metrics(
                 question=question,
                 catalog=app.state.catalog,
