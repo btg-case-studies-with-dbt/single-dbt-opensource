@@ -74,6 +74,64 @@ defaultTest:
           reason: `TR12 metric mismatch: expected '${expected}', got '${r.metric}'`,
         };
 
+    # ── Ranking / argmax guard (load-bearing) ─────────────────────────────────
+    # Superlative questions ("which X used the most/fewest ...") must return a
+    # RANKING, never a grand total (a correct number to a different question).
+    # Applies ONLY to rows that declare expected_rank; all other rows pass (n/a).
+    #   expected_rank = "abstain"          -> the ranking dimension is NOT governed;
+    #                                         the system MUST decline, never answer
+    #                                         with a grand total.
+    #   expected_rank = "<dim>:max|:min"   -> the system MUST answer with a group-by
+    #                                         breakdown whose reported value equals
+    #                                         the max/min over that breakdown.
+    - type: "javascript"
+      value: |
+        const want = context.vars.expected_rank;
+        // Not applicable when the row declares no ranking expectation.
+        if (want === null || want === undefined || want === '' || want === 'null') {
+          return true;
+        }
+        const r = typeof output === 'string' ? JSON.parse(output) : output;
+
+        // ── abstain branch: ungoverned ranking dimension -> must NOT answer ──
+        if (want === 'abstain') {
+          if (r.category !== 'answered') return true;
+          return {
+            pass: false,
+            score: 0,
+            reason: `argmax abstain expected (ungoverned ranking dimension), but backend answered with value '${r.value}' — a grand total, not a ranking`,
+          };
+        }
+
+        // ── value===argmax branch: "<dimension>:max" | "<dimension>:min" ──
+        const [dim, dir] = want.split(':');
+        if (r.category !== 'answered') {
+          return {
+            pass: false,
+            score: 0,
+            reason: `argmax expected answered (ranked by ${dim}), got category '${r.category}'`,
+          };
+        }
+        const metric = context.vars.expected_metric;
+        const rows = Array.isArray(r.rows) ? r.rows : [];
+        const vals = rows.map((x) => Number(x[metric])).filter((v) => !Number.isNaN(v));
+        // A real ranking needs a multi-group breakdown; a single row = grand total.
+        if (rows.length < 2 || vals.length < 2) {
+          return {
+            pass: false,
+            score: 0,
+            reason: `argmax by ${dim} needs a multi-group breakdown; got ${rows.length} row(s) — a grand total, not a ranking`,
+          };
+        }
+        const extreme = dir === 'min' ? Math.min(...vals) : Math.max(...vals);
+        const got = Number(r.value);
+        if (!Number.isNaN(got) && got === extreme) return true;
+        return {
+          pass: false,
+          score: 0,
+          reason: `argmax mismatch: reported value ${r.value} != ${dir}(${dim} breakdown)=${extreme}`,
+        };
+
   # ── Domain: intentionally NOT asserted ────────────────────────────────────
   # The `domain` field in domain_questions.jsonl is a test-organization tag
   # used for domain-balanced coverage/slicing, NOT a field of the /query

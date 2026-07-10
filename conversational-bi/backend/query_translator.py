@@ -297,6 +297,247 @@ def _filter_is_applied(filter_obj: dict[str, Any], catalog: dict[str, Any]) -> b
     return False
 
 
+# ── rank / argmax coverage guard (never confidently wrong) ────────────────
+#
+# The prompt (ai-architect's file) classifies intent and NAMES the dimension in
+# a ``rank`` object; THIS code decides rank-vs-abstain and computes the argmax.
+# The whole guard mirrors ``check_filter_coverage``: same abstain mechanism
+# (reuse the ``unknown_metric`` category with a discriminating ``reason``), same
+# "show your work" clarify message, same "fail loud toward abstention" ethos.
+
+# Superlative lexicon for the LEXICAL BACKSTOP. When the model FAILS to emit a
+# ``rank`` object but the question is an unmistakable superlative frame, bias to
+# ABSTAIN rather than return a grand total dressed up as a winner.
+#
+# HARD CONSTRAINT: "peak" is deliberately EXCLUDED. It is a metric name
+# (``peak_rpm``, ``peak_tpm``) and appears in fixture rows ("quota peak"), so
+# treating it as a superlative synonym would false-fire the backstop on a plain
+# metric lookup. Do not add it here.
+_RANK_LEXICON = [
+    "which",
+    "most",
+    "highest",
+    "lowest",
+    "largest",
+    "smallest",
+    "fewest",
+    "greatest",
+    "top",
+    "bottom",
+    "maximum",
+    "minimum",
+    "least",
+    "more than any",
+    "ranked by",
+]
+_SUPERLATIVE_RE = re.compile(
+    r"\b(?:" + "|".join(re.escape(w) for w in _RANK_LEXICON) + r")\b",
+    re.IGNORECASE,
+)
+
+
+def _matches_superlative(question: str | None) -> bool:
+    """Return whether the question matches a tight superlative frame.
+
+    Word-boundary matching so "top" does not fire on "topic" and "peak" (absent
+    from the lexicon by design) never fires at all.
+    """
+    if not question:
+        return False
+    return bool(_SUPERLATIVE_RE.search(question))
+
+
+def _unsupported_argmax(
+    computable_metric: str,
+    requested_field: str | None,
+    available_dimensions: list[str],
+    *,
+    backstop: bool = False,
+) -> dict[str, Any]:
+    """Build the ``unknown_metric``/``unsupported_argmax_dimension`` abstain object.
+
+    Mirrors ``_unsupported_filter``: reuses the ``unknown_metric`` category
+    (keeping the five-category contract intact) with a discriminating ``reason``
+    and a self-explaining message that SHOWS the governed dimensions that DO
+    exist, so the clarify message shows its work instead of a blank "no".
+
+    ``backstop`` distinguishes the two abstain paths: a model-emitted rank naming
+    an ungoverned dimension (requirement 3) vs. the lexical backstop firing when
+    the model emitted no rank at all (requirement 2).
+    """
+    if available_dimensions:
+        dims_str = ", ".join(available_dimensions)
+        dims_clause = f"{computable_metric} can be ranked by {dims_str}."
+    else:
+        dims_clause = f"{computable_metric} has no governed breakdown dimensions to rank by."
+
+    if backstop:
+        message = (
+            f"That looks like a ranking question, but I couldn't resolve it to a "
+            f"governed ranking of {computable_metric}. {dims_clause} Tell me which "
+            f"of those to rank by and I'll compute the winner."
+        )
+    else:
+        named = f"'{requested_field}'" if requested_field else "the requested dimension"
+        message = (
+            f"I can compute {computable_metric}, but I can't rank it by {named} — "
+            f"that is not a governed dimension of this metric. {dims_clause} Ranking "
+            f"by an ungoverned attribute would be a data-model change."
+        )
+
+    return {
+        "category": "unknown_metric",
+        "reason": "unsupported_argmax_dimension",
+        "computable_metric": computable_metric,
+        "available_dimensions": available_dimensions,
+        "requested_rank_field": requested_field,
+        "proposed_metrics": [computable_metric],
+        "message": message,
+        "backstop": backstop,
+    }
+
+
+def check_rank_coverage(
+    metric: str,
+    rank: dict[str, Any] | None,
+    dimensions: list[str] | None,  # noqa: ARG001 – proposed breakdowns, informational
+    catalog: dict[str, Any],
+    question: str = "",
+) -> dict[str, Any] | None:
+    """Decide rank-vs-abstain for a superlative / argmax question.
+
+    On a governed semantic layer the number is exact; the argmax failure mode is
+    returning a grand TOTAL as though it were the top row of a ranking. This
+    guard converts that class of confident-wrong answer into a transparent
+    abstention, exactly like ``check_filter_coverage`` does for scope filters.
+
+    Contract (additive — the pass-through path is byte-for-byte unchanged):
+
+    1. ``rank`` null/absent AND no lexical backstop match → pass through (``None``).
+    2. ``rank`` absent but the question matches a tight superlative frame →
+       ABSTAIN via the lexical backstop (the model missed an obvious ranking).
+    3. ``rank`` present AND ``by_field`` is null OR ∉ the metric's valid
+       dimensions → ABSTAIN (``unsupported_argmax_dimension``), showing the
+       governed dimensions that DO exist.
+    4. ``rank`` present AND ``by_field`` valid → pass through (``None``); the
+       caller (``process_question``) injects ``by_field`` into the group-by via
+       ``rank_group_by`` and computes the winner via ``apply_argmax`` after the
+       query runs. The guard stays a pure decision, mirroring the filter guard.
+
+    Parameters
+    ----------
+    metric
+        The single selected metric name (ambiguity already resolved upstream).
+    rank
+        The selection payload's ``rank`` object, shaped
+        ``{"by_field": <catalog dimension | null>, "direction": "max"|"min"}``.
+        ``None`` / absent / falsy means the model proposed no ranking.
+    dimensions
+        The proposed breakdown dimensions (informational; validity is decided
+        against the catalog, not the proposed list).
+    catalog
+        The compact catalog; used to look up the metric's ``valid_dimensions``.
+    question
+        The original user question, needed for the lexical backstop (item 2).
+
+    Returns
+    -------
+    dict or None
+        An ``unknown_metric``/``unsupported_argmax_dimension`` abstain object, or
+        ``None`` to pass through.
+    """
+    metric_lookup = {m["name"]: m for m in catalog.get("metrics", [])}
+    available_dimensions = metric_lookup.get(metric, {}).get("valid_dimensions", [])
+
+    # ── Case A: the model proposed no ranking. ──
+    if not rank:
+        if _matches_superlative(question):
+            logger.info(
+                "Rank-coverage BACKSTOP abstain: metric=%s question=%r", metric, question
+            )
+            return _unsupported_argmax(metric, None, available_dimensions, backstop=True)
+        return None  # additive: byte-for-byte pass-through (the regression guarantee)
+
+    # ── Case B: the model proposed a ranking. ──
+    if not isinstance(rank, dict):
+        # Defensive: a malformed (non-dict) rank cannot name a field → fail loud
+        # toward abstention rather than toward an ungrouped grand total.
+        logger.warning("rank payload was not a dict (%r) — abstaining toward safety", type(rank))
+        by_field = None
+    else:
+        by_field = rank.get("by_field")
+
+    if not by_field or by_field not in available_dimensions:
+        logger.info(
+            "Rank-coverage guard ABSTAIN: metric=%s by_field=%r valid=%s",
+            metric,
+            by_field,
+            available_dimensions,
+        )
+        return _unsupported_argmax(metric, by_field, available_dimensions)
+
+    return None  # valid rank → caller injects group-by + computes the argmax
+
+
+def rank_group_by(valid_dims: list[str], rank: dict[str, Any] | None) -> list[str]:
+    """Ensure the argmax ``by_field`` is present in the group-by.
+
+    Load-bearing: without the group-by column a valid rank executes UNGROUPED and
+    silently regresses to a grand total, so the "winner" would just be the
+    overall sum. Returns a new list; unchanged when the field is already present
+    or the rank is inactive/malformed.
+    """
+    if not isinstance(rank, dict):
+        return list(valid_dims)
+    by_field = rank.get("by_field")
+    if by_field and by_field not in valid_dims:
+        return [*valid_dims, by_field]
+    return list(valid_dims)
+
+
+def _to_number(value: Any) -> float | None:
+    """Coerce a parsed metric cell to a float, or ``None`` if non-numeric.
+
+    MetricFlow cells arrive as strings (possibly comma-grouped); rows that do not
+    parse are excluded from the ranking rather than crashing it.
+    """
+    try:
+        return float(str(value).replace(",", "").strip())
+    except (ValueError, AttributeError):
+        return None
+
+
+def apply_argmax(
+    rows: list[dict[str, Any]],
+    metric: str,
+    rank: dict[str, Any] | None,
+) -> tuple[list[dict[str, Any]], dict[str, Any] | None, Any]:
+    """Sort parsed rows numerically by the metric column and pick the winner.
+
+    ``direction`` "max" → descending (argmax); "min" → ascending (argmin);
+    default "max". Non-numeric rows sort to the end so they can never win.
+
+    Returns ``(sorted_rows, winner, value)`` where ``winner`` is ``sorted_rows[0]``
+    and ``value`` is the winning row's raw metric value (kept as-is, not the
+    float used for sorting, so the surfaced number matches the source cell).
+    """
+    direction = "max"
+    if isinstance(rank, dict):
+        direction = str(rank.get("direction") or "max").lower()
+    reverse = direction != "min"  # max → descending
+
+    scored = [(r, _to_number(r.get(metric))) for r in rows]
+    ranked = sorted(
+        (pair for pair in scored if pair[1] is not None),
+        key=lambda pair: pair[1],
+        reverse=reverse,
+    )
+    sorted_rows = [r for r, _ in ranked] + [r for r, n in scored if n is None]
+    winner = sorted_rows[0] if sorted_rows else None
+    value = winner.get(metric) if winner else None
+    return sorted_rows, winner, value
+
+
 # ── TR6: relative time resolution ─────────────────────────────────────────
 
 
@@ -612,9 +853,29 @@ def process_question(
     if filter_abstain:
         return filter_abstain
 
+    # ── 4b. Rank / argmax coverage guard (never confidently wrong) ─────
+    # A superlative question ("which model used the most tokens") must not be
+    # answered with a grand TOTAL dressed up as the winner. Runs RIGHT AFTER the
+    # filter guard and BEFORE build/execute: abstain on an ungoverned rank
+    # dimension or on a lexical-backstop miss, so no wrong query ever runs.
+    # ``rank`` absent AND no backstop → pass through unchanged (additive).
+    rank = llm_result.get("rank")
+    rank_abstain = check_rank_coverage(
+        proposed_metrics[0], rank, llm_result.get("dimensions", []), catalog, question
+    )
+    if rank_abstain:
+        return rank_abstain
+
     # ── 5. TR7: validate dimensions ────────────────────────────────────
     proposed_dims = llm_result.get("dimensions", [])
     valid_dims = validate_dimensions(proposed_metrics, proposed_dims, catalog)
+
+    # A valid rank survived the guard: ensure its by_field is in the group-by so
+    # the metric is computed PER dimension value, not as one ungrouped total (a
+    # missing group-by would silently regress the "winner" to the grand total).
+    rank_active = bool(rank)
+    if rank_active:
+        valid_dims = rank_group_by(valid_dims, rank)
 
     # ── 6. TR6: time resolution ────────────────────────────────────────
     start_time, end_time = resolve_time_range(llm_result.get("time_range", ""), time_override)
@@ -649,6 +910,22 @@ def process_question(
 
     # ── 8. Parse results ───────────────────────────────────────────────
     rows = parse_mf_output(stdout)
+
+    # 8b. Argmax: for a valid rank, sort numerically by the metric column and
+    # surface the winner (rows[0] + an ``argmax`` field). THIS code computes the
+    # ranking; the prompt only named the dimension.
+    if rank_active:
+        sorted_rows, winner, argmax_value = apply_argmax(rows, proposed_metrics[0], rank)
+        result = _answered(
+            metric=proposed_metrics[0],
+            value=argmax_value,
+            dimensions=valid_dims,
+            time_range_used=time_range_used,
+            rows=sorted_rows,
+        )
+        result["argmax"] = winner
+        return result
+
     # TR10: zero rows is still answered
     value = rows[0].get(proposed_metrics[0], "N/A") if rows else None
 

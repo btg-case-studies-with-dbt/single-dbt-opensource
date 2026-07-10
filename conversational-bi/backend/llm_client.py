@@ -65,6 +65,10 @@ Rules:
    - BREAKDOWN = group/segment the result ("by product line", "per model", "by region"). Put breakdowns in "dimensions". An unsupported breakdown is dropped by the server and the metric's TOTAL is still a correct answer, so a breakdown NEVER makes a question unknown — still return the metric.
    - SCOPE FILTER = restrict WHICH rows are counted ("from marketplace", "for the US", "billed to the Customer Success team", "on the Pro plan"). A scope filter CHANGES the number, so it must NEVER be silently ignored. Put EVERY scope filter in "filters" as {{"field": <catalog dimension name or null>, "value": <the entity/value>, "phrase": <verbatim span>}}. Name "field" ONLY when you are confident a catalog dimension of the CHOSEN metric expresses it AND the entity type matches (an internal team/department is NOT a customer account); otherwise set "field" to null. Set classification by the MEASURE alone (answered if a metric measures it) — the server verifies filter coverage and will DECLINE if a scope filter cannot be governed. Do NOT fold an unexpressible scope filter into an "answered" total yourself.
    - Decline as unknown_metric when the core MEASURE itself is absent from the catalog (e.g. "refund rate", "cache hit rate", "profit margin").
+1d. A SUPERLATIVE / RANKING question ("WHICH/WHAT <entity> used the MOST / FEWEST / HIGHEST / LOWEST / TOP / BOTTOM ...", "rank ... by <entity>", "the biggest/smallest <entity>") asks WHICH MEMBER of a group leads — it is NOT a grand total. Returning the total across all groups is a correct number to a DIFFERENT question, so you must NEVER answer a superlative as a plain total. For EVERY superlative question you MUST emit "rank" as a JSON OBJECT — NEVER a bare string: {{"direction": "max" for most/highest/top/biggest OR "min" for fewest/lowest/bottom/smallest, "by_field": <the catalog dimension OF THE CHOSEN METRIC that names the ranked entity, or null if none matches>, "phrase": <the verbatim superlative span>}}. Identify the ENTITY being ranked and map it to a catalog dimension OF THE CHOSEN METRIC:
+   - If a catalog dimension of the chosen metric expresses that entity, classification "answered", put ONLY that ranking dimension in "dimensions", and set "by_field" to that EXACT dimension name. The server groups by it and returns the leading row.
+   - If NO catalog dimension of any relevant metric expresses the entity being ranked (e.g. "deployment" when the token metrics only carry account_id / model_variant), you CANNOT govern the ranking → classification "unknown_metric", "metrics": [], and set "by_field": null. Do NOT fall back to the grand total.
+   Set "rank" to null (JSON null — NOT a string, NOT the object) for EVERY non-superlative question.
 2. ambiguous → put the 2+ candidate catalog metric names in "metrics" and set "ambiguous": true.
 3. unknown_metric → "metrics": [] and set "domain" to the supported domain the question belongs to.
 4. unsupported_domain → "metrics": [] and set "domain" to the real out-of-catalog subject (e.g. "HR", "Support").
@@ -86,6 +90,9 @@ Examples (question -> JSON):
 "Show me net revenue by product line for this year" -> {{"classification":"answered","metrics":["total_net_revenue"],"dimensions":[],"time_range":"this year","domain":"Revenue","ambiguous":false,"filters":[]}}  (a BREAKDOWN the catalog lacks -> dropped, total still answers)
 "How much value did we get from marketplace last year?" -> {{"classification":"unknown_metric","metrics":[],"dimensions":[],"time_range":"last year","domain":"Revenue","ambiguous":false,"filters":[]}}  (vague measure "value" -> do not guess revenue)
 "How many tokens did we bill to the Customer Success team?" -> {{"classification":"answered","metrics":["total_tokens_consumed"],"dimensions":[],"time_range":"","domain":"Token usage","ambiguous":false,"filters":[{{"field":null,"value":"Customer Success team","phrase":"billed to the Customer Success team"}}]}}  (scope filter on an internal team, not a customer account -> field null; server declines)
+"Which model used the most tokens last week?" -> {{"classification":"answered","metrics":["total_tokens_consumed"],"dimensions":["model_variant"],"time_range":"last week","domain":"Token usage","ambiguous":false,"filters":[],"rank":{{"direction":"max","by_field":"model_variant","phrase":"Which model used the most"}}}}  (superlative "which/most" -> rank OBJECT by the governed dimension, NOT a grand total)
+"Which customer used the fewest tokens last month?" -> {{"classification":"answered","metrics":["total_tokens_consumed"],"dimensions":["account_id"],"time_range":"last month","domain":"Token usage","ambiguous":false,"filters":[],"rank":{{"direction":"min","by_field":"account_id","phrase":"Which customer used the fewest"}}}}  (superlative "which/fewest" -> rank OBJECT, by_field=account_id, direction=min)
+"Which deployment used the most tokens last week?" -> {{"classification":"unknown_metric","metrics":[],"dimensions":[],"time_range":"last week","domain":"Token usage","ambiguous":false,"filters":[],"rank":{{"direction":"max","by_field":null,"phrase":"Which deployment used the most"}}}}  ("deployment" is NOT a governed dimension of any token metric -> by_field null -> guard abstains; do NOT return the grand total)
 
 Return ONLY valid JSON with this exact structure (no markdown, no explanation):
 {{
@@ -95,7 +102,8 @@ Return ONLY valid JSON with this exact structure (no markdown, no explanation):
   "filters": [{{"field": "dimension_name or null", "value": "restriction value", "phrase": "verbatim span"}}] or [],
   "time_range": "last week" or "this month" or "last quarter" or "" or a free-form string,
   "domain": "a supported domain, or the real out-of-catalog subject",
-  "ambiguous": false
+  "ambiguous": false,
+  "rank": {{"direction": "max or min", "by_field": "catalog dimension of the chosen metric, or null", "phrase": "verbatim superlative span"}}  for a SUPERLATIVE question (rule 1d), or null for every non-superlative question
 }}"""
 
 
