@@ -63,6 +63,16 @@ Read this chart first. NOTE: `git` writes from THIS session worked cleanly with 
 
 ## Progress Notes
 
+### 2026-07-11 (overnight) - tpm-agent-amazon @ cli — Steps 1-5 driven; agentic investigation loop BUILT
+
+**Steps 1-4 CLOSED + signed off** (DECISION_LOG #11/#12): M1 governed-query contract (metric-routing 98.6%, worst-run 95.7%, 0 hallucinations, MetricFlow-only, clarify-continue deferred); M2 reliability (dbt RI fix committed + `int_revenue_daily` stale-yml fixed → `dbt build --target prod` exits 0 clean, no `--exclude` — the real fresh-clone blocker, NOT the RI post_hooks); M3 UI parity (frontend already complete, `/`→`/frontend/` 307 redirect added); M4 ORR (`07.ORR.md`, 13/13 gates green — **exposed key ROTATED + verified, gate #13 closed** `f7c9b44`).
+
+**Step 5 REFRAMED then BUILT overnight** (DECISION_LOG #13/#14): retired the fabricated ticket-RAG (C1 tickets used fake FKs `ACME-1234` absent from dim_customer + wrong-product content — root cause the human caught). Evidence pivoted to **evidence-from-governed-data via a bounded agentic loop** (human pulled LangGraph loop into scope). Human approved overnight autonomous build on `dev`, **Decision 1=A** (investigative-intent trigger), Decisions 2 (semantic `fct_` re-point) & 3 (toolstack) deferred. Built: intent classifier, `GovernedMetricTool` (only data access, Step-1 guards), T1-T4 decomposition + additivity gate, bounded loop (MAX_STEPS=6), EvidenceBundle + **causal-language linter (causation structurally unrepresentable)**, `/query` intent gate + `INVESTIGATION_ENABLED` kill-switch. 70/70 unit tests; never-fabricate eval **13/14, 0 fabrications** (1 miss = fixture over-expected answered on ambiguous "input tokens"). Loop proven E2E on real `mf`. Commits: `c00f9cd`→`0303500`→`054bee2`→`5d3d108` on `dev`.
+
+**OPEN for human (Step 5 not signed off):** final gate-2 acceptance; TRD wording reconcile (`investigated` vs `complete`, add `stopped_reason:"error"`); one-line `input-tokens` fixture relabel; QA CI-gate formalization; Decision 2 semantic re-point (unlocks region/intra-day evidence — coarse-but-honest today); Launch go/no-go + Sign-off. Retired `evidence_retriever.py`/`synthesis_*.py` are dead code (QA cleanup). ai-architect subagent hung in a Monitor wait-loop mid-run (orphaned promptfoo procs); recovered by `pkill` + TPM-owned authoritative eval — watch for that pattern.
+
+
+
 ### 2026-07-10 - tpm-agent-amazon @ cli — RANKING/ARGMAX GUARD shipped (committed `d3d5747`, gate-2 passed)
 
 **Situation:** Built the named residual from `3a7dab2` — superlative questions ("which/most/top/highest/lowest") returned a grand TOTAL across groups instead of a ranking. Ran THE PLAY end to end; committed as one scoped increment.
