@@ -52,6 +52,17 @@ _content_filter = ContentFilter()
 # ── LiteLLM config ─────────────────────────────────────────────────────────
 LITELLM_CONFIG: litellm_gateway.LiteLLMConfig | None = None
 
+# ── investigation loop kill-switch (TR12.8e rollback mechanism) ──────────────
+# When false, every /query reverts to today's single-shot shape (plain lookups
+# and investigative questions alike get investigation.status:"not_investigated").
+# This is the instant rollback for the one-way-door contract extension: flip the
+# env var and restart to disable the loop without touching client contracts.
+INVESTIGATION_ENABLED = os.environ.get("INVESTIGATION_ENABLED", "true").lower() in (
+    "true",
+    "1",
+    "yes",
+)
+
 # ── logging ───────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -281,8 +292,9 @@ async def query(request: Request) -> dict[str, Any]:
             "detail": reason,
         }
 
-    # import llm client and query translator (late import for clean startup)
-    from . import llm_client, query_translator  # noqa: PLC0415
+    # import llm client, query translator, and investigation orchestrator
+    # (late import for clean startup)
+    from . import agent_graph, llm_client  # noqa: PLC0415
 
     start = time.monotonic()
 
@@ -317,14 +329,44 @@ async def query(request: Request) -> dict[str, Any]:
                 model=model,
             )
 
-        # process question through five-category router
-        outcome = query_translator.process_question(
+        # process question through the five-category router, then the intent
+        # gate: investigative + answered runs the bounded investigation loop;
+        # everything else keeps the single-shot shape (Decision 1 = A). The base
+        # answer is the guaranteed floor and is never regressed by investigation.
+        outcome = agent_graph.run_query(
             question=question,
             catalog=app.state.catalog,
             llm_result=llm_result,
             time_override=time_override,
+            investigation_enabled=INVESTIGATION_ENABLED,
         )
         elapsed = time.monotonic() - start
+
+        # ── operability: surface investigation health (3 a.m. readability) ──
+        investigation = outcome.get("investigation") or {}
+        inv_status = investigation.get("status")
+        inv_steps = investigation.get("steps_taken")
+        inv_stopped = investigation.get("stopped_reason")
+        inv_evidence_count = len(investigation.get("evidence", []) or [])
+        # A partial/latency/error investigation is the on-call signal: the floor
+        # answer stood, but warranted evidence is missing — log it loud (WARNING)
+        # so a spike is greppable without turning on debug tracing.
+        if inv_status == "partial":
+            logger.warning(
+                "Investigation PARTIAL: metric=%s stopped_reason=%s steps=%s evidence=%d",
+                outcome.get("metric"),
+                inv_stopped,
+                inv_steps,
+                inv_evidence_count,
+            )
+        elif inv_status == "investigated":
+            logger.info(
+                "Investigation complete: metric=%s stopped_reason=%s steps=%s evidence=%d",
+                outcome.get("metric"),
+                inv_stopped,
+                inv_steps,
+                inv_evidence_count,
+            )
 
         # span attributes
         if hasattr(span, "set_attribute") and not isinstance(span, _NoopSpan):
@@ -332,6 +374,9 @@ async def query(request: Request) -> dict[str, Any]:
             span.set_attribute("app.question.provider", config_provider)
             span.set_attribute("app.question.category", outcome["category"])
             span.set_attribute("app.question.elapsed_seconds", round(elapsed, 3))
+            span.set_attribute("app.investigation.status", str(inv_status))
+            span.set_attribute("app.investigation.steps", int(inv_steps or 0))
+            span.set_attribute("app.investigation.evidence_count", inv_evidence_count)
 
         # TR9: structured audit log (PII-redacted)
         audit_record = {
@@ -343,6 +388,10 @@ async def query(request: Request) -> dict[str, Any]:
             "dimensions": outcome.get("dimensions"),
             "time_range": outcome.get("time_range"),
             "domain": llm_result.get("domain") if llm_result else None,
+            "investigation_status": inv_status,
+            "investigation_steps": inv_steps,
+            "investigation_stopped_reason": inv_stopped,
+            "investigation_evidence_count": inv_evidence_count,
         }
         _write_audit_log(audit_record)
 

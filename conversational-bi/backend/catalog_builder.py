@@ -92,6 +92,44 @@ def _load_approved_metric_names() -> set[str]:
     return approved
 
 
+def _build_measure_agg_map(manifest: dict[str, Any]) -> dict[str, str]:
+    """Return ``{measure_name: agg}`` across every semantic model.
+
+    The aggregation type (``sum``/``average``/``count_distinct``/…) is the
+    governed signal the investigation loop's **additivity gate** reads: only
+    ``sum``-aggregated measures have per-member deltas that add up to the total
+    delta, so only they may claim dimensional *contribution*. Ratios and averages
+    (e.g. ``error_rate`` → ``error_rate_pct`` agg ``average``) may report values
+    but never "X drove it" (design §146).
+    """
+    agg_map: dict[str, str] = {}
+    for sm in manifest.get("semantic_models", []):
+        for meas in sm.get("measures", []):
+            name = meas.get("name")
+            agg = meas.get("agg")
+            if name and agg:
+                agg_map[name] = str(agg)
+    return agg_map
+
+
+def _metric_agg(metric: dict[str, Any], measure_agg: dict[str, str]) -> str | None:
+    """Return the effective aggregation for a metric, or ``None`` if not additive-simple.
+
+    A ``simple`` metric wraps exactly one input measure; its aggregation IS that
+    measure's ``agg``. ``ratio``/``derived``/``cumulative`` metrics have no single
+    additive aggregation (their per-member deltas do not sum), so they return
+    ``None`` — read by the loop as non-additive.
+    """
+    if metric.get("type") != "simple":
+        return None
+    tp = metric.get("type_params", {}) or {}
+    measures = tp.get("measures") or tp.get("input_measures") or []
+    names = [m.get("name") for m in measures if isinstance(m, dict)]
+    if len(names) != 1 or not names[0]:
+        return None
+    return measure_agg.get(names[0])
+
+
 def _load_dimension_catalog() -> tuple[list[dict[str, Any]], dict[str, list[str]]]:
     """Load full dimension definitions and per-metric valid dimensions from the YAML catalog.
 
@@ -183,6 +221,9 @@ def build_catalog(
     # dimension info from YAML catalog
     all_dimensions, metric_dims = _load_dimension_catalog()
 
+    # per-measure aggregation map (drives the loop's additivity gate)
+    measure_agg = _build_measure_agg_map(manifest)
+
     # ── build metrics list ────────────────────────────────────────────
     domain_set: set[str] = set()
     metrics: list[dict[str, Any]] = []
@@ -211,6 +252,11 @@ def build_catalog(
                 "label": m.get("label", name),
                 "description": m.get("description", ""),
                 "type": m.get("type", "simple"),
+                # Governed aggregation of the wrapped measure (``sum`` = additive),
+                # or ``None`` for ratio/derived metrics. Read by the investigation
+                # loop's additivity gate; additive to the LLM catalog (ignored by
+                # clients that don't know the key).
+                "agg": _metric_agg(m, measure_agg),
                 "domain": domain,
                 "valid_dimensions": metric_dims.get(name, []),
             }
