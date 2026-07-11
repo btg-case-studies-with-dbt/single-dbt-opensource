@@ -1,0 +1,65 @@
+# .github/workflows/conversational_bi_ci.yml
+# QA merge gate for Step 5 (agentic investigation loop) — the BACKEND-FREE gates only.
+# Policy: docs/13.QA_MERGE_GATES.md (gates G1 + G2). Requirement: 04.TRD.md TR12.8.
+#
+# What this enforces (BLOCKS merge):
+#   G1  Backend unit suite GREEN (70/70)     — unittest, no live backend needed
+#   G2  Never-fabricate assertions non-vacuous — node eval/selftest_assertions.cjs (exit 0)
+#
+# What this does NOT run (see docs/13 §4 reviewer runbook — they need the LIVE backend):
+#   G3  never-fabricate eval over investigation_questions.csv (0 fabrications)
+#   G4  metric-routing regression (>=95%, 0 hallucinations)
+# Those are merge-blocking BY POLICY, enforced by the reviewer via an attached promptfoo
+# artifact, because the single-instance backend cannot run headless here.
+#
+# Runner: self-hosted (mirrors dbt_ci.yml). Provisioning of the Python 3.11 venv is the
+# one open TPM decision (docs/13 §9): reuse the pre-provisioned conversational-bi/.venv,
+# or a fresh install. This workflow prefers the pinned venv and falls back to creating one.
+
+name: conversational-bi CI — QA merge gates (G1 + G2)
+
+on:
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'conversational-bi/backend/**'
+      - 'conversational-bi/tests/**'
+      - 'conversational-bi/eval/**'
+      - '.github/workflows/conversational_bi_ci.yml'
+
+jobs:
+  qa-gates:
+    name: QA gates — unit suite (G1) + never-fabricate non-vacuity (G2)
+    runs-on: self-hosted
+    defaults:
+      run:
+        working-directory: conversational-bi
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Resolve Python (pinned venv if present, else provision 3.11)
+        id: py
+        run: |
+          if [ -x ".venv/bin/python" ]; then
+            echo "Using pre-provisioned .venv (Python 3.11)"
+            echo "PY=.venv/bin/python" >> "$GITHUB_ENV"
+          else
+            echo "No .venv found — provisioning one from requirements.txt"
+            python3.11 -m venv .venv
+            .venv/bin/python -m pip install --upgrade pip
+            .venv/bin/python -m pip install -r requirements.txt
+            echo "PY=.venv/bin/python" >> "$GITHUB_ENV"
+          fi
+
+      - name: G1 — backend unit suite (must be 70/70 GREEN, blocks merge)
+        run: |
+          $PY -m unittest -v \
+            tests.test_intent_classifier \
+            tests.test_governed_metric_tool \
+            tests.test_investigation_loop \
+            tests.test_check_filter_coverage \
+            tests.test_check_rank_coverage
+
+      - name: G2 — never-fabricate assertions are non-vacuous (exit 0, blocks merge)
+        run: node eval/selftest_assertions.cjs

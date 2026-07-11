@@ -23,6 +23,7 @@ Layout (per-case-study chains from day one; human decision 2026-07-06, DECISION_
 | 11 | `10.METRIC_DICTIONARY.csv` | Certified governed metric dictionary. |
 | 12 | `11.HUMAN_SIGNOFF.md` | Human approval gate. |
 | 13 | `12.Marketing.md` | Marketing requirements and claims guardrails. |
+| 14 | `13.QA_MERGE_GATES.md` | QA merge-gate policy: what blocks a merge vs warns (Step 5 loop). |
 
 ## Consolidation Note
 
