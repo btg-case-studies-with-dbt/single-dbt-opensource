@@ -2,7 +2,7 @@ question,expected_intent,expected_category,expected_metric,expected_investigatio
 Why did total net revenue change last month?,investigative,answered,total_net_revenue,investigated,true,
 What drove the change in total tokens consumed last week?,investigative,answered,total_tokens_consumed,investigated,true,
 Break down the movement in gross revenue this quarter.,investigative,answered,total_gross_revenue,investigated,true,
-What's behind the shift in input tokens last week?,investigative,answered,total_input_tokens,investigated,true,
+What's behind the shift in total input tokens last week?,investigative,answered,total_input_tokens,investigated,true,
 Why did total token usage change last week by region?,investigative,answered,total_tokens_consumed,investigated_or_partial,true,region
 What drove our error rate up last week?,investigative,answered,error_rate,investigated_or_partial,false,
 Why did our recurring revenue drop last month?,investigative,unknown_metric,,not_investigated,false,

@@ -1,8 +1,8 @@
 {
-  "evalId": "eval-Hw9-2026-07-11T18:58:46",
+  "evalId": "eval-Zi2-2026-07-11T19:48:13",
   "results": {
     "version": 3,
-    "timestamp": "2026-07-11T18:58:46.641Z",
+    "timestamp": "2026-07-11T19:48:13.653Z",
     "prompts": [
       {
         "id": "d3bcaf71c11c2678899be04d872718325f0916b3b0705e805ee29930663a42e2",
@@ -10,13 +10,13 @@
         "label": "{{question}}",
         "provider": "http:localhost:8000/query",
         "metrics": {
-          "score": 13.8,
-          "testPassCount": 13,
-          "testFailCount": 1,
+          "score": 14,
+          "testPassCount": 14,
+          "testFailCount": 0,
           "testErrorCount": 0,
-          "assertPassCount": 69,
-          "assertFailCount": 1,
-          "totalLatencyMs": 869105,
+          "assertPassCount": 70,
+          "assertFailCount": 0,
+          "totalLatencyMs": 518179,
           "tokenUsage": {
             "prompt": 0,
             "completion": 0,
@@ -115,8 +115,8 @@
             }
           ]
         },
-        "id": "f737b61e-f7ee-4695-9e02-cfa40b3661e9",
-        "latencyMs": 19833,
+        "id": "23f76fab-3a0a-4b95-846d-342e9192339f",
+        "latencyMs": 53145,
         "namedScores": {},
         "prompt": {
           "raw": "Why did total net revenue change last month?",
@@ -130,8 +130,8 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"answered\",\"metric\":\"total_net_revenue\",\"value\":\"1.92323\",\"dimensions\":[],\"time_range\":\"2025-12-01 to 2025-12-31\",\"rows\":[{\"metric_time__week\":\"2025-12-01T00:00:00\",\"total_net_revenue\":\"1.92323\"},{\"metric_time__week\":\"2025-12-08T00:00:00\",\"total_net_revenue\":\"1.96938\"},{\"metric_time__week\":\"2025-12-15T00:00:00\",\"total_net_revenue\":\"1.86315\"},{\"metric_time__week\":\"2025-12-22T00:00:00\",\"total_net_revenue\":\"2.00983\"},{\"metric_time__week\":\"2025-12-29T00:00:00\",\"total_net_revenue\":\"2.02584\"}],\"investigation\":{\"status\":\"investigated\",\"steps_taken\":6,\"stopped_reason\":\"bounds\",\"trace\":[{\"step\":1,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_net_revenue\",\"group_by\":[],\"time_window\":\"2025-12-01 to 2025-12-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_net_revenue||2025-12-01 to 2025-12-31|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":2,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_net_revenue\",\"group_by\":[],\"time_window\":\"between 2025-10-31 and 2025-11-30\",\"rank\":null,\"filters\":[]},\"signature\":\"total_net_revenue||between 2025-10-31 and 2025-11-30|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":3,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_net_revenue\",\"group_by\":[\"account_id__account_size\"],\"time_window\":\"between 2025-12-01 and 2025-12-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_net_revenue|account_id__account_size|between 2025-12-01 and 2025-12-31|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":4,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_net_revenue\",\"group_by\":[\"account_id__account_size\"],\"time_window\":\"between 2025-10-31 and 2025-11-30\",\"rank\":null,\"filters\":[]},\"signature\":\"total_net_revenue|account_id__account_size|between 2025-10-31 and 2025-11-30|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":5,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_net_revenue\",\"group_by\":[\"account_id__company_name\"],\"time_window\":\"between 2025-12-01 and 2025-12-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_net_revenue|account_id__company_name|between 2025-12-01 and 2025-12-31|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":6,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_net_revenue\",\"group_by\":[\"account_id__company_name\"],\"time_window\":\"between 2025-10-31 and 2025-11-30\",\"rank\":null,\"filters\":[]},\"signature\":\"total_net_revenue|account_id__company_name|between 2025-10-31 and 2025-11-30|\",\"category\":\"answered\",\"produced_evidence\":false}],\"evidence\":[{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":1,\"claim_type\":\"movement\",\"measured_delta\":0.4066,\"pct_change\":0.0433,\"baseline_value\":9.3849,\"current_value\":9.7914},{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":3,\"claim_type\":\"dimensional_contribution\",\"dimension\":\"account_id__account_size\",\"contributor\":\"SMB\",\"measured_delta\":0.149,\"share_of_total_delta\":0.3666},{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":5,\"claim_type\":\"dimensional_contribution\",\"dimension\":\"account_id__company_name\",\"contributor\":\"Nexus Analytics\",\"measured_delta\":0.1253,\"share_of_total_delta\":0.3082}],\"summary\":\"total_net_revenue moved by 0.4066 (4.3%) between the prior and current window. By account_id__account_size, SMB co-moved with 36.7% of the movement. By account_id__company_name, Nexus Analytics co-moved with 30.8% of the movement. These are governed correlations over the same window, not attributions.\"},\"elapsed_seconds\":19.811}",
-          "latencyMs": 19833,
+          "raw": "{\"category\":\"answered\",\"metric\":\"total_net_revenue\",\"value\":\"1.92323\",\"dimensions\":[],\"time_range\":\"2025-12-01 to 2025-12-31\",\"rows\":[{\"metric_time__week\":\"2025-12-01T00:00:00\",\"total_net_revenue\":\"1.92323\"},{\"metric_time__week\":\"2025-12-08T00:00:00\",\"total_net_revenue\":\"1.96938\"},{\"metric_time__week\":\"2025-12-15T00:00:00\",\"total_net_revenue\":\"1.86315\"},{\"metric_time__week\":\"2025-12-22T00:00:00\",\"total_net_revenue\":\"2.00983\"},{\"metric_time__week\":\"2025-12-29T00:00:00\",\"total_net_revenue\":\"2.02584\"}],\"investigation\":{\"status\":\"investigated\",\"steps_taken\":6,\"stopped_reason\":\"bounds\",\"trace\":[{\"step\":1,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_net_revenue\",\"group_by\":[],\"time_window\":\"2025-12-01 to 2025-12-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_net_revenue||2025-12-01 to 2025-12-31|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":2,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_net_revenue\",\"group_by\":[],\"time_window\":\"between 2025-10-31 and 2025-11-30\",\"rank\":null,\"filters\":[]},\"signature\":\"total_net_revenue||between 2025-10-31 and 2025-11-30|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":3,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_net_revenue\",\"group_by\":[\"account_id__account_size\"],\"time_window\":\"between 2025-12-01 and 2025-12-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_net_revenue|account_id__account_size|between 2025-12-01 and 2025-12-31|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":4,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_net_revenue\",\"group_by\":[\"account_id__account_size\"],\"time_window\":\"between 2025-10-31 and 2025-11-30\",\"rank\":null,\"filters\":[]},\"signature\":\"total_net_revenue|account_id__account_size|between 2025-10-31 and 2025-11-30|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":5,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_net_revenue\",\"group_by\":[\"account_id__company_name\"],\"time_window\":\"between 2025-12-01 and 2025-12-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_net_revenue|account_id__company_name|between 2025-12-01 and 2025-12-31|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":6,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_net_revenue\",\"group_by\":[\"account_id__company_name\"],\"time_window\":\"between 2025-10-31 and 2025-11-30\",\"rank\":null,\"filters\":[]},\"signature\":\"total_net_revenue|account_id__company_name|between 2025-10-31 and 2025-11-30|\",\"category\":\"answered\",\"produced_evidence\":false}],\"evidence\":[{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":1,\"claim_type\":\"movement\",\"measured_delta\":0.4066,\"pct_change\":0.0433,\"baseline_value\":9.3849,\"current_value\":9.7914},{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":3,\"claim_type\":\"dimensional_contribution\",\"dimension\":\"account_id__account_size\",\"contributor\":\"SMB\",\"measured_delta\":0.149,\"share_of_total_delta\":0.3666},{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":5,\"claim_type\":\"dimensional_contribution\",\"dimension\":\"account_id__company_name\",\"contributor\":\"Nexus Analytics\",\"measured_delta\":0.1253,\"share_of_total_delta\":0.3082}],\"summary\":\"total_net_revenue moved by 0.4066 (4.3%) between the prior and current window. By account_id__account_size, SMB co-moved with 36.7% of the movement. By account_id__company_name, Nexus Analytics co-moved with 30.8% of the movement. These are governed correlations over the same window, not attributions.\"},\"elapsed_seconds\":13.154}",
+          "latencyMs": 53145,
           "cached": false,
           "metadata": {
             "http": {
@@ -140,7 +140,7 @@
               "headers": {
                 "content-length": "3390",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
                 "server": "uvicorn"
               }
             }
@@ -305,7 +305,7 @@
               ],
               "summary": "total_net_revenue moved by 0.4066 (4.3%) between the prior and current window. By account_id__account_size, SMB co-moved with 36.7% of the movement. By account_id__company_name, Nexus Analytics co-moved with 30.8% of the movement. These are governed correlations over the same window, not attributions."
             },
-            "elapsed_seconds": 19.811
+            "elapsed_seconds": 13.154
           },
           "tokenUsage": {
             "prompt": 0,
@@ -419,7 +419,7 @@
             "headers": {
               "content-length": "3390",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
               "server": "uvicorn"
             }
           },
@@ -489,8 +489,8 @@
             }
           ]
         },
-        "id": "a720efa2-36c0-471f-925a-31469c35e825",
-        "latencyMs": 94278,
+        "id": "efa2ca21-693e-498f-be29-a11d68f14004",
+        "latencyMs": 14274,
         "namedScores": {},
         "prompt": {
           "raw": "What drove the change in total tokens consumed last week?",
@@ -504,8 +504,8 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"answered\",\"metric\":\"total_tokens_consumed\",\"value\":\"374758\",\"dimensions\":[],\"time_range\":\"2026-01-05 to 2026-01-11\",\"rows\":[{\"metric_time__month\":\"2026-01-01T00:00:00\",\"total_tokens_consumed\":\"374758\"}],\"investigation\":{\"status\":\"investigated\",\"steps_taken\":6,\"stopped_reason\":\"bounds\",\"trace\":[{\"step\":1,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[],\"time_window\":\"2026-01-05 to 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed||2026-01-05 to 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":2,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed||between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":3,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"account_id__model_type\"],\"time_window\":\"between 2026-01-05 and 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|account_id__model_type|between 2026-01-05 and 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":4,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"account_id__model_type\"],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|account_id__model_type|between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":5,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"model_variant\"],\"time_window\":\"between 2026-01-05 and 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|model_variant|between 2026-01-05 and 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":6,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"model_variant\"],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|model_variant|between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false}],\"evidence\":[{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":1,\"claim_type\":\"movement\",\"measured_delta\":0.0,\"pct_change\":0.0,\"baseline_value\":374758.0,\"current_value\":374758.0}],\"summary\":\"total_tokens_consumed moved by 0.0 (0.0%) between the prior and current window. These are governed correlations over the same window, not attributions.\"},\"elapsed_seconds\":27.408}",
-          "latencyMs": 94278,
+          "raw": "{\"category\":\"answered\",\"metric\":\"total_tokens_consumed\",\"value\":\"374758\",\"dimensions\":[],\"time_range\":\"2026-01-05 to 2026-01-11\",\"rows\":[{\"metric_time__month\":\"2026-01-01T00:00:00\",\"total_tokens_consumed\":\"374758\"}],\"investigation\":{\"status\":\"investigated\",\"steps_taken\":6,\"stopped_reason\":\"bounds\",\"trace\":[{\"step\":1,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[],\"time_window\":\"2026-01-05 to 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed||2026-01-05 to 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":2,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed||between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":3,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"account_id__model_type\"],\"time_window\":\"between 2026-01-05 and 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|account_id__model_type|between 2026-01-05 and 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":4,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"account_id__model_type\"],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|account_id__model_type|between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":5,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"model_variant\"],\"time_window\":\"between 2026-01-05 and 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|model_variant|between 2026-01-05 and 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":6,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"model_variant\"],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|model_variant|between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false}],\"evidence\":[{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":1,\"claim_type\":\"movement\",\"measured_delta\":0.0,\"pct_change\":0.0,\"baseline_value\":374758.0,\"current_value\":374758.0}],\"summary\":\"total_tokens_consumed moved by 0.0 (0.0%) between the prior and current window. These are governed correlations over the same window, not attributions.\"},\"elapsed_seconds\":14.255}",
+          "latencyMs": 14274,
           "cached": false,
           "metadata": {
             "http": {
@@ -514,7 +514,7 @@
               "headers": {
                 "content-length": "2483",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
                 "server": "uvicorn"
               }
             }
@@ -643,7 +643,7 @@
               ],
               "summary": "total_tokens_consumed moved by 0.0 (0.0%) between the prior and current window. These are governed correlations over the same window, not attributions."
             },
-            "elapsed_seconds": 27.408
+            "elapsed_seconds": 14.255
           },
           "tokenUsage": {
             "prompt": 0,
@@ -757,7 +757,7 @@
             "headers": {
               "content-length": "2483",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
               "server": "uvicorn"
             }
           },
@@ -827,8 +827,8 @@
             }
           ]
         },
-        "id": "2c14e122-f635-40c5-952c-6bb5b8ff5247",
-        "latencyMs": 94267,
+        "id": "8af68003-21ab-4376-988d-49167c0bbc0c",
+        "latencyMs": 53154,
         "namedScores": {},
         "prompt": {
           "raw": "Break down the movement in gross revenue this quarter.",
@@ -842,8 +842,8 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"answered\",\"metric\":\"total_gross_revenue\",\"value\":\"2.28141\",\"dimensions\":[],\"time_range\":\"2026-01-01 to 2026-03-31\",\"rows\":[{\"metric_time__week\":\"2025-12-29T00:00:00\",\"total_gross_revenue\":\"2.28141\"},{\"metric_time__week\":\"2026-01-05T00:00:00\",\"total_gross_revenue\":\"2.29957\"},{\"metric_time__week\":\"2026-01-12T00:00:00\",\"total_gross_revenue\":\"2.26008\"},{\"metric_time__week\":\"2026-01-19T00:00:00\",\"total_gross_revenue\":\"0.386065\"}],\"investigation\":{\"status\":\"investigated\",\"steps_taken\":6,\"stopped_reason\":\"bounds\",\"trace\":[{\"step\":1,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_gross_revenue\",\"group_by\":[],\"time_window\":\"2026-01-01 to 2026-03-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_gross_revenue||2026-01-01 to 2026-03-31|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":2,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_gross_revenue\",\"group_by\":[],\"time_window\":\"between 2025-10-03 and 2025-12-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_gross_revenue||between 2025-10-03 and 2025-12-31|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":3,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_gross_revenue\",\"group_by\":[\"account_id__account_size\"],\"time_window\":\"between 2026-01-01 and 2026-03-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_gross_revenue|account_id__account_size|between 2026-01-01 and 2026-03-31|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":4,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_gross_revenue\",\"group_by\":[\"account_id__account_size\"],\"time_window\":\"between 2025-10-03 and 2025-12-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_gross_revenue|account_id__account_size|between 2025-10-03 and 2025-12-31|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":5,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_gross_revenue\",\"group_by\":[\"account_id__company_name\"],\"time_window\":\"between 2026-01-01 and 2026-03-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_gross_revenue|account_id__company_name|between 2026-01-01 and 2026-03-31|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":6,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_gross_revenue\",\"group_by\":[\"account_id__company_name\"],\"time_window\":\"between 2025-10-03 and 2025-12-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_gross_revenue|account_id__company_name|between 2025-10-03 and 2025-12-31|\",\"category\":\"answered\",\"produced_evidence\":false}],\"evidence\":[{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":1,\"claim_type\":\"movement\",\"measured_delta\":-16.1037,\"pct_change\":-0.6902,\"baseline_value\":23.3308,\"current_value\":7.2271},{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":3,\"claim_type\":\"dimensional_contribution\",\"dimension\":\"account_id__account_size\",\"contributor\":\"Enterprise\",\"measured_delta\":-8.569,\"share_of_total_delta\":0.5321},{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":5,\"claim_type\":\"dimensional_contribution\",\"dimension\":\"account_id__company_name\",\"contributor\":\"GlobalBank Ltd\",\"measured_delta\":-4.7421,\"share_of_total_delta\":0.2945}],\"summary\":\"total_gross_revenue moved by -16.1037 (-69.0%) between the prior and current window. By account_id__account_size, Enterprise co-moved with 53.2% of the movement. By account_id__company_name, GlobalBank Ltd co-moved with 29.4% of the movement. These are governed correlations over the same window, not attributions.\"},\"elapsed_seconds\":30.543}",
-          "latencyMs": 94267,
+          "raw": "{\"category\":\"answered\",\"metric\":\"total_gross_revenue\",\"value\":\"2.28141\",\"dimensions\":[],\"time_range\":\"2026-01-01 to 2026-03-31\",\"rows\":[{\"metric_time__week\":\"2025-12-29T00:00:00\",\"total_gross_revenue\":\"2.28141\"},{\"metric_time__week\":\"2026-01-05T00:00:00\",\"total_gross_revenue\":\"2.29957\"},{\"metric_time__week\":\"2026-01-12T00:00:00\",\"total_gross_revenue\":\"2.26008\"},{\"metric_time__week\":\"2026-01-19T00:00:00\",\"total_gross_revenue\":\"0.386065\"}],\"investigation\":{\"status\":\"investigated\",\"steps_taken\":6,\"stopped_reason\":\"bounds\",\"trace\":[{\"step\":1,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_gross_revenue\",\"group_by\":[],\"time_window\":\"2026-01-01 to 2026-03-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_gross_revenue||2026-01-01 to 2026-03-31|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":2,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_gross_revenue\",\"group_by\":[],\"time_window\":\"between 2025-10-03 and 2025-12-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_gross_revenue||between 2025-10-03 and 2025-12-31|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":3,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_gross_revenue\",\"group_by\":[\"account_id__account_size\"],\"time_window\":\"between 2026-01-01 and 2026-03-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_gross_revenue|account_id__account_size|between 2026-01-01 and 2026-03-31|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":4,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_gross_revenue\",\"group_by\":[\"account_id__account_size\"],\"time_window\":\"between 2025-10-03 and 2025-12-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_gross_revenue|account_id__account_size|between 2025-10-03 and 2025-12-31|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":5,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_gross_revenue\",\"group_by\":[\"account_id__company_name\"],\"time_window\":\"between 2026-01-01 and 2026-03-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_gross_revenue|account_id__company_name|between 2026-01-01 and 2026-03-31|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":6,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_gross_revenue\",\"group_by\":[\"account_id__company_name\"],\"time_window\":\"between 2025-10-03 and 2025-12-31\",\"rank\":null,\"filters\":[]},\"signature\":\"total_gross_revenue|account_id__company_name|between 2025-10-03 and 2025-12-31|\",\"category\":\"answered\",\"produced_evidence\":false}],\"evidence\":[{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":1,\"claim_type\":\"movement\",\"measured_delta\":-16.1037,\"pct_change\":-0.6902,\"baseline_value\":23.3308,\"current_value\":7.2271},{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":3,\"claim_type\":\"dimensional_contribution\",\"dimension\":\"account_id__account_size\",\"contributor\":\"Enterprise\",\"measured_delta\":-8.569,\"share_of_total_delta\":0.5321},{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":5,\"claim_type\":\"dimensional_contribution\",\"dimension\":\"account_id__company_name\",\"contributor\":\"GlobalBank Ltd\",\"measured_delta\":-4.7421,\"share_of_total_delta\":0.2945}],\"summary\":\"total_gross_revenue moved by -16.1037 (-69.0%) between the prior and current window. By account_id__account_size, Enterprise co-moved with 53.2% of the movement. By account_id__company_name, GlobalBank Ltd co-moved with 29.4% of the movement. These are governed correlations over the same window, not attributions.\"},\"elapsed_seconds\":12.679}",
+          "latencyMs": 53154,
           "cached": false,
           "metadata": {
             "http": {
@@ -852,7 +852,7 @@
               "headers": {
                 "content-length": "3375",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
                 "server": "uvicorn"
               }
             }
@@ -1013,7 +1013,7 @@
               ],
               "summary": "total_gross_revenue moved by -16.1037 (-69.0%) between the prior and current window. By account_id__account_size, Enterprise co-moved with 53.2% of the movement. By account_id__company_name, GlobalBank Ltd co-moved with 29.4% of the movement. These are governed correlations over the same window, not attributions."
             },
-            "elapsed_seconds": 30.543
+            "elapsed_seconds": 12.679
           },
           "tokenUsage": {
             "prompt": 0,
@@ -1127,235 +1127,13 @@
             "headers": {
               "content-length": "3375",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
               "server": "uvicorn"
             }
           },
           "_promptfooFileMetadata": {}
         },
         "failureReason": 0
-      },
-      {
-        "cost": 0,
-        "error": "floor category mismatch: expected 'answered', got 'ambiguous'",
-        "gradingResult": {
-          "pass": false,
-          "score": 0.8,
-          "reason": "floor category mismatch: expected 'answered', got 'ambiguous'",
-          "namedScores": {},
-          "tokensUsed": {
-            "total": 0,
-            "prompt": 0,
-            "completion": 0,
-            "cached": 0,
-            "numRequests": 0
-          },
-          "componentResults": [
-            {
-              "pass": false,
-              "score": 0,
-              "reason": "floor category mismatch: expected 'answered', got 'ambiguous'",
-              "assertion": {
-                "type": "javascript",
-                "value": "file://investigation_assertions.js:baseFloor"
-              }
-            },
-            {
-              "pass": true,
-              "score": 1,
-              "reason": "Assertion passed",
-              "assertion": {
-                "type": "javascript",
-                "value": "file://investigation_assertions.js:intentStatus"
-              }
-            },
-            {
-              "pass": true,
-              "score": 1,
-              "reason": "Assertion passed",
-              "assertion": {
-                "type": "javascript",
-                "value": "file://investigation_assertions.js:evidenceGoverned"
-              }
-            },
-            {
-              "pass": true,
-              "score": 1,
-              "reason": "Assertion passed",
-              "assertion": {
-                "type": "javascript",
-                "value": "file://investigation_assertions.js:noCausalLanguage"
-              }
-            },
-            {
-              "pass": true,
-              "score": 1,
-              "reason": "Assertion passed",
-              "assertion": {
-                "type": "javascript",
-                "value": "file://investigation_assertions.js:termination"
-              }
-            }
-          ]
-        },
-        "id": "bb43378d-b10c-470c-b457-9d308db98b06",
-        "latencyMs": 94286,
-        "namedScores": {},
-        "prompt": {
-          "raw": "What's behind the shift in input tokens last week?",
-          "label": "{{question}}",
-          "config": {}
-        },
-        "promptId": "d3bcaf71c11c2678899be04d872718325f0916b3b0705e805ee29930663a42e2",
-        "promptIdx": 0,
-        "provider": {
-          "id": "http:localhost:8000/query",
-          "label": ""
-        },
-        "response": {
-          "raw": "{\"category\":\"ambiguous\",\"message\":\"Question matched multiple metrics: ['actual_input_tokens', 'total_input_tokens']\",\"proposed_metrics\":[\"actual_input_tokens\",\"total_input_tokens\"],\"elapsed_seconds\":16.455}",
-          "latencyMs": 94286,
-          "cached": false,
-          "metadata": {
-            "http": {
-              "status": 200,
-              "statusText": "OK",
-              "headers": {
-                "content-length": "206",
-                "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
-                "server": "uvicorn"
-              }
-            }
-          },
-          "output": {
-            "category": "ambiguous",
-            "message": "Question matched multiple metrics: ['actual_input_tokens', 'total_input_tokens']",
-            "proposed_metrics": [
-              "actual_input_tokens",
-              "total_input_tokens"
-            ],
-            "elapsed_seconds": 16.455
-          },
-          "tokenUsage": {
-            "prompt": 0,
-            "completion": 0,
-            "cached": 0,
-            "total": 0,
-            "numRequests": 1,
-            "completionDetails": {
-              "reasoning": 0,
-              "acceptedPrediction": 0,
-              "rejectedPrediction": 0,
-              "cacheReadInputTokens": 0,
-              "cacheCreationInputTokens": 0
-            },
-            "assertions": {
-              "total": 0,
-              "prompt": 0,
-              "completion": 0,
-              "cached": 0,
-              "numRequests": 0,
-              "completionDetails": {
-                "reasoning": 0,
-                "acceptedPrediction": 0,
-                "rejectedPrediction": 0,
-                "cacheReadInputTokens": 0,
-                "cacheCreationInputTokens": 0
-              }
-            }
-          }
-        },
-        "score": 0.8,
-        "success": false,
-        "testCase": {
-          "vars": {
-            "question": "What's behind the shift in input tokens last week?",
-            "expected_intent": "investigative",
-            "expected_category": "answered",
-            "expected_metric": "total_input_tokens",
-            "expected_investigation_status": "investigated",
-            "expected_decomposable": "true",
-            "forbidden_factor_dim": ""
-          },
-          "assert": [
-            {
-              "type": "javascript",
-              "value": "file://investigation_assertions.js:baseFloor"
-            },
-            {
-              "type": "javascript",
-              "value": "file://investigation_assertions.js:intentStatus"
-            },
-            {
-              "type": "javascript",
-              "value": "file://investigation_assertions.js:evidenceGoverned"
-            },
-            {
-              "type": "javascript",
-              "value": "file://investigation_assertions.js:noCausalLanguage"
-            },
-            {
-              "type": "javascript",
-              "value": "file://investigation_assertions.js:termination"
-            }
-          ],
-          "options": {},
-          "description": "Row #4",
-          "metadata": {}
-        },
-        "testIdx": 3,
-        "tokenUsage": {
-          "prompt": 0,
-          "completion": 0,
-          "cached": 0,
-          "total": 0,
-          "numRequests": 1,
-          "completionDetails": {
-            "reasoning": 0,
-            "acceptedPrediction": 0,
-            "rejectedPrediction": 0,
-            "cacheReadInputTokens": 0,
-            "cacheCreationInputTokens": 0
-          },
-          "assertions": {
-            "total": 0,
-            "prompt": 0,
-            "completion": 0,
-            "cached": 0,
-            "numRequests": 1,
-            "completionDetails": {
-              "reasoning": 0,
-              "acceptedPrediction": 0,
-              "rejectedPrediction": 0,
-              "cacheReadInputTokens": 0,
-              "cacheCreationInputTokens": 0
-            }
-          }
-        },
-        "vars": {
-          "question": "What's behind the shift in input tokens last week?",
-          "expected_intent": "investigative",
-          "expected_category": "answered",
-          "expected_metric": "total_input_tokens",
-          "expected_investigation_status": "investigated",
-          "expected_decomposable": "true",
-          "forbidden_factor_dim": ""
-        },
-        "metadata": {
-          "http": {
-            "status": 200,
-            "statusText": "OK",
-            "headers": {
-              "content-length": "206",
-              "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
-              "server": "uvicorn"
-            }
-          },
-          "_promptfooFileMetadata": {}
-        },
-        "failureReason": 1
       },
       {
         "cost": 0,
@@ -1419,8 +1197,346 @@
             }
           ]
         },
-        "id": "4e28232a-260e-42a7-ad97-f785e8bc23cc",
-        "latencyMs": 97949,
+        "id": "e95065e9-d3ae-4dc0-8e3b-a94195527e23",
+        "latencyMs": 53160,
+        "namedScores": {},
+        "prompt": {
+          "raw": "What's behind the shift in total input tokens last week?",
+          "label": "{{question}}",
+          "config": {}
+        },
+        "promptId": "d3bcaf71c11c2678899be04d872718325f0916b3b0705e805ee29930663a42e2",
+        "promptIdx": 0,
+        "provider": {
+          "id": "http:localhost:8000/query",
+          "label": ""
+        },
+        "response": {
+          "raw": "{\"category\":\"answered\",\"metric\":\"total_input_tokens\",\"value\":\"253705\",\"dimensions\":[],\"time_range\":\"2026-01-05 to 2026-01-11\",\"rows\":[{\"metric_time__month\":\"2026-01-01T00:00:00\",\"total_input_tokens\":\"253705\"}],\"investigation\":{\"status\":\"investigated\",\"steps_taken\":6,\"stopped_reason\":\"bounds\",\"trace\":[{\"step\":1,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_input_tokens\",\"group_by\":[],\"time_window\":\"2026-01-05 to 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_input_tokens||2026-01-05 to 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":2,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_input_tokens\",\"group_by\":[],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_input_tokens||between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":3,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_input_tokens\",\"group_by\":[\"account_id__model_type\"],\"time_window\":\"between 2026-01-05 and 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_input_tokens|account_id__model_type|between 2026-01-05 and 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":4,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_input_tokens\",\"group_by\":[\"account_id__model_type\"],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_input_tokens|account_id__model_type|between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":5,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_input_tokens\",\"group_by\":[\"model_variant\"],\"time_window\":\"between 2026-01-05 and 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_input_tokens|model_variant|between 2026-01-05 and 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":6,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_input_tokens\",\"group_by\":[\"model_variant\"],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_input_tokens|model_variant|between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false}],\"evidence\":[{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":1,\"claim_type\":\"movement\",\"measured_delta\":0.0,\"pct_change\":0.0,\"baseline_value\":253705.0,\"current_value\":253705.0}],\"summary\":\"total_input_tokens moved by 0.0 (0.0%) between the prior and current window. These are governed correlations over the same window, not attributions.\"},\"elapsed_seconds\":13.016}",
+          "latencyMs": 53160,
+          "cached": false,
+          "metadata": {
+            "http": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": {
+                "content-length": "2438",
+                "content-type": "application/json",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
+                "server": "uvicorn"
+              }
+            }
+          },
+          "output": {
+            "category": "answered",
+            "metric": "total_input_tokens",
+            "value": "253705",
+            "dimensions": [],
+            "time_range": "2026-01-05 to 2026-01-11",
+            "rows": [
+              {
+                "metric_time__month": "2026-01-01T00:00:00",
+                "total_input_tokens": "253705"
+              }
+            ],
+            "investigation": {
+              "status": "investigated",
+              "steps_taken": 6,
+              "stopped_reason": "bounds",
+              "trace": [
+                {
+                  "step": 1,
+                  "tool": "T1",
+                  "intent": {
+                    "metric": "total_input_tokens",
+                    "group_by": [],
+                    "time_window": "2026-01-05 to 2026-01-11",
+                    "rank": null,
+                    "filters": []
+                  },
+                  "signature": "total_input_tokens||2026-01-05 to 2026-01-11|",
+                  "category": "answered",
+                  "produced_evidence": true
+                },
+                {
+                  "step": 2,
+                  "tool": "T1",
+                  "intent": {
+                    "metric": "total_input_tokens",
+                    "group_by": [],
+                    "time_window": "between 2025-12-29 and 2026-01-04",
+                    "rank": null,
+                    "filters": []
+                  },
+                  "signature": "total_input_tokens||between 2025-12-29 and 2026-01-04|",
+                  "category": "answered",
+                  "produced_evidence": false
+                },
+                {
+                  "step": 3,
+                  "tool": "T2",
+                  "intent": {
+                    "metric": "total_input_tokens",
+                    "group_by": [
+                      "account_id__model_type"
+                    ],
+                    "time_window": "between 2026-01-05 and 2026-01-11",
+                    "rank": null,
+                    "filters": []
+                  },
+                  "signature": "total_input_tokens|account_id__model_type|between 2026-01-05 and 2026-01-11|",
+                  "category": "answered",
+                  "produced_evidence": false
+                },
+                {
+                  "step": 4,
+                  "tool": "T2",
+                  "intent": {
+                    "metric": "total_input_tokens",
+                    "group_by": [
+                      "account_id__model_type"
+                    ],
+                    "time_window": "between 2025-12-29 and 2026-01-04",
+                    "rank": null,
+                    "filters": []
+                  },
+                  "signature": "total_input_tokens|account_id__model_type|between 2025-12-29 and 2026-01-04|",
+                  "category": "answered",
+                  "produced_evidence": false
+                },
+                {
+                  "step": 5,
+                  "tool": "T2",
+                  "intent": {
+                    "metric": "total_input_tokens",
+                    "group_by": [
+                      "model_variant"
+                    ],
+                    "time_window": "between 2026-01-05 and 2026-01-11",
+                    "rank": null,
+                    "filters": []
+                  },
+                  "signature": "total_input_tokens|model_variant|between 2026-01-05 and 2026-01-11|",
+                  "category": "answered",
+                  "produced_evidence": false
+                },
+                {
+                  "step": 6,
+                  "tool": "T2",
+                  "intent": {
+                    "metric": "total_input_tokens",
+                    "group_by": [
+                      "model_variant"
+                    ],
+                    "time_window": "between 2025-12-29 and 2026-01-04",
+                    "rank": null,
+                    "filters": []
+                  },
+                  "signature": "total_input_tokens|model_variant|between 2025-12-29 and 2026-01-04|",
+                  "category": "answered",
+                  "produced_evidence": false
+                }
+              ],
+              "evidence": [
+                {
+                  "relationship": "correlation",
+                  "governed": true,
+                  "source_tool_call_step": 1,
+                  "claim_type": "movement",
+                  "measured_delta": 0,
+                  "pct_change": 0,
+                  "baseline_value": 253705,
+                  "current_value": 253705
+                }
+              ],
+              "summary": "total_input_tokens moved by 0.0 (0.0%) between the prior and current window. These are governed correlations over the same window, not attributions."
+            },
+            "elapsed_seconds": 13.016
+          },
+          "tokenUsage": {
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "total": 0,
+            "numRequests": 1,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          }
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "vars": {
+            "question": "What's behind the shift in total input tokens last week?",
+            "expected_intent": "investigative",
+            "expected_category": "answered",
+            "expected_metric": "total_input_tokens",
+            "expected_investigation_status": "investigated",
+            "expected_decomposable": "true",
+            "forbidden_factor_dim": ""
+          },
+          "assert": [
+            {
+              "type": "javascript",
+              "value": "file://investigation_assertions.js:baseFloor"
+            },
+            {
+              "type": "javascript",
+              "value": "file://investigation_assertions.js:intentStatus"
+            },
+            {
+              "type": "javascript",
+              "value": "file://investigation_assertions.js:evidenceGoverned"
+            },
+            {
+              "type": "javascript",
+              "value": "file://investigation_assertions.js:noCausalLanguage"
+            },
+            {
+              "type": "javascript",
+              "value": "file://investigation_assertions.js:termination"
+            }
+          ],
+          "options": {},
+          "description": "Row #4",
+          "metadata": {}
+        },
+        "testIdx": 3,
+        "tokenUsage": {
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "total": 0,
+          "numRequests": 1,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "assertions": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 1,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            }
+          }
+        },
+        "vars": {
+          "question": "What's behind the shift in total input tokens last week?",
+          "expected_intent": "investigative",
+          "expected_category": "answered",
+          "expected_metric": "total_input_tokens",
+          "expected_investigation_status": "investigated",
+          "expected_decomposable": "true",
+          "forbidden_factor_dim": ""
+        },
+        "metadata": {
+          "http": {
+            "status": 200,
+            "statusText": "OK",
+            "headers": {
+              "content-length": "2438",
+              "content-type": "application/json",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
+              "server": "uvicorn"
+            }
+          },
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "javascript",
+                "value": "file://investigation_assertions.js:baseFloor"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "javascript",
+                "value": "file://investigation_assertions.js:intentStatus"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "javascript",
+                "value": "file://investigation_assertions.js:evidenceGoverned"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "javascript",
+                "value": "file://investigation_assertions.js:noCausalLanguage"
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "javascript",
+                "value": "file://investigation_assertions.js:termination"
+              }
+            }
+          ]
+        },
+        "id": "ead85bf4-422b-4fc3-afae-c47fdf9c41b7",
+        "latencyMs": 54362,
         "namedScores": {},
         "prompt": {
           "raw": "Why did total token usage change last week by region?",
@@ -1434,8 +1550,8 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"answered\",\"metric\":\"total_tokens_consumed\",\"value\":\"374758\",\"dimensions\":[],\"time_range\":\"2026-01-05 to 2026-01-11\",\"rows\":[{\"metric_time__month\":\"2026-01-01T00:00:00\",\"total_tokens_consumed\":\"374758\"}],\"investigation\":{\"status\":\"investigated\",\"steps_taken\":6,\"stopped_reason\":\"bounds\",\"trace\":[{\"step\":1,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[],\"time_window\":\"2026-01-05 to 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed||2026-01-05 to 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":2,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed||between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":3,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"account_id__model_type\"],\"time_window\":\"between 2026-01-05 and 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|account_id__model_type|between 2026-01-05 and 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":4,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"account_id__model_type\"],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|account_id__model_type|between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":5,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"model_variant\"],\"time_window\":\"between 2026-01-05 and 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|model_variant|between 2026-01-05 and 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":6,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"model_variant\"],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|model_variant|between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false}],\"evidence\":[{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":1,\"claim_type\":\"movement\",\"measured_delta\":0.0,\"pct_change\":0.0,\"baseline_value\":374758.0,\"current_value\":374758.0}],\"summary\":\"total_tokens_consumed moved by 0.0 (0.0%) between the prior and current window. These are governed correlations over the same window, not attributions.\"},\"elapsed_seconds\":23.519}",
-          "latencyMs": 97949,
+          "raw": "{\"category\":\"answered\",\"metric\":\"total_tokens_consumed\",\"value\":\"374758\",\"dimensions\":[],\"time_range\":\"2026-01-05 to 2026-01-11\",\"rows\":[{\"metric_time__month\":\"2026-01-01T00:00:00\",\"total_tokens_consumed\":\"374758\"}],\"investigation\":{\"status\":\"investigated\",\"steps_taken\":6,\"stopped_reason\":\"bounds\",\"trace\":[{\"step\":1,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[],\"time_window\":\"2026-01-05 to 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed||2026-01-05 to 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":2,\"tool\":\"T1\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed||between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":3,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"account_id__model_type\"],\"time_window\":\"between 2026-01-05 and 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|account_id__model_type|between 2026-01-05 and 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":4,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"account_id__model_type\"],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|account_id__model_type|between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":5,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"model_variant\"],\"time_window\":\"between 2026-01-05 and 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|model_variant|between 2026-01-05 and 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":6,\"tool\":\"T2\",\"intent\":{\"metric\":\"total_tokens_consumed\",\"group_by\":[\"model_variant\"],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"total_tokens_consumed|model_variant|between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false}],\"evidence\":[{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":1,\"claim_type\":\"movement\",\"measured_delta\":0.0,\"pct_change\":0.0,\"baseline_value\":374758.0,\"current_value\":374758.0}],\"summary\":\"total_tokens_consumed moved by 0.0 (0.0%) between the prior and current window. These are governed correlations over the same window, not attributions.\"},\"elapsed_seconds\":15.498}",
+          "latencyMs": 54362,
           "cached": false,
           "metadata": {
             "http": {
@@ -1444,7 +1560,7 @@
               "headers": {
                 "content-length": "2483",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
                 "server": "uvicorn"
               }
             }
@@ -1573,7 +1689,7 @@
               ],
               "summary": "total_tokens_consumed moved by 0.0 (0.0%) between the prior and current window. These are governed correlations over the same window, not attributions."
             },
-            "elapsed_seconds": 23.519
+            "elapsed_seconds": 15.498
           },
           "tokenUsage": {
             "prompt": 0,
@@ -1687,7 +1803,7 @@
             "headers": {
               "content-length": "2483",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
               "server": "uvicorn"
             }
           },
@@ -1757,8 +1873,8 @@
             }
           ]
         },
-        "id": "8bd618ea-9588-4f2e-bb58-20c9d13fd1b1",
-        "latencyMs": 94221,
+        "id": "3641590d-c0bb-45a1-89c7-5173e65fa7b1",
+        "latencyMs": 31865,
         "namedScores": {},
         "prompt": {
           "raw": "What drove our error rate up last week?",
@@ -1772,17 +1888,17 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"answered\",\"metric\":\"error_rate\",\"value\":\"5.66574\",\"dimensions\":[],\"time_range\":\"2026-01-05 to 2026-01-11\",\"rows\":[{\"metric_time__month\":\"2026-01-01T00:00:00\",\"error_rate\":\"5.66574\"}],\"investigation\":{\"status\":\"investigated\",\"steps_taken\":3,\"stopped_reason\":\"no_warranted_follow_up\",\"trace\":[{\"step\":1,\"tool\":\"T1\",\"intent\":{\"metric\":\"error_rate\",\"group_by\":[],\"time_window\":\"2026-01-05 to 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"error_rate||2026-01-05 to 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":2,\"tool\":\"T1\",\"intent\":{\"metric\":\"error_rate\",\"group_by\":[],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"error_rate||between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":3,\"tool\":\"T4\",\"intent\":{\"metric\":\"total_api_requests\",\"group_by\":[],\"time_window\":\"between 2026-01-05 and 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_api_requests||between 2026-01-05 and 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":true}],\"evidence\":[{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":1,\"claim_type\":\"movement\",\"measured_delta\":0.0,\"pct_change\":0.0,\"baseline_value\":5.6657,\"current_value\":5.6657},{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":3,\"claim_type\":\"coincident_signal\",\"coincident_metric\":\"total_api_requests\",\"measured_value\":140.0}],\"summary\":\"error_rate moved by 0.0 (0.0%) between the prior and current window. total_api_requests registered 140.0 over the same window (parallel signal). These are governed correlations over the same window, not attributions.\"},\"elapsed_seconds\":13.086}",
-          "latencyMs": 94221,
+          "raw": "{\"category\":\"answered\",\"metric\":\"error_rate\",\"value\":\"5.66574\",\"dimensions\":[],\"time_range\":\"2026-01-05 to 2026-01-11\",\"rows\":[{\"metric_time__month\":\"2026-01-01T00:00:00\",\"error_rate\":\"5.66574\"}],\"investigation\":{\"status\":\"investigated\",\"steps_taken\":3,\"stopped_reason\":\"no_warranted_follow_up\",\"trace\":[{\"step\":1,\"tool\":\"T1\",\"intent\":{\"metric\":\"error_rate\",\"group_by\":[],\"time_window\":\"2026-01-05 to 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"error_rate||2026-01-05 to 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":true},{\"step\":2,\"tool\":\"T1\",\"intent\":{\"metric\":\"error_rate\",\"group_by\":[],\"time_window\":\"between 2025-12-29 and 2026-01-04\",\"rank\":null,\"filters\":[]},\"signature\":\"error_rate||between 2025-12-29 and 2026-01-04|\",\"category\":\"answered\",\"produced_evidence\":false},{\"step\":3,\"tool\":\"T4\",\"intent\":{\"metric\":\"total_api_requests\",\"group_by\":[],\"time_window\":\"between 2026-01-05 and 2026-01-11\",\"rank\":null,\"filters\":[]},\"signature\":\"total_api_requests||between 2026-01-05 and 2026-01-11|\",\"category\":\"answered\",\"produced_evidence\":true}],\"evidence\":[{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":1,\"claim_type\":\"movement\",\"measured_delta\":0.0,\"pct_change\":0.0,\"baseline_value\":5.6657,\"current_value\":5.6657},{\"relationship\":\"correlation\",\"governed\":true,\"source_tool_call_step\":3,\"claim_type\":\"coincident_signal\",\"coincident_metric\":\"total_api_requests\",\"measured_value\":140.0}],\"summary\":\"error_rate moved by 0.0 (0.0%) between the prior and current window. total_api_requests registered 140.0 over the same window (parallel signal). These are governed correlations over the same window, not attributions.\"},\"elapsed_seconds\":9.836}",
+          "latencyMs": 31865,
           "cached": false,
           "metadata": {
             "http": {
               "status": 200,
               "statusText": "OK",
               "headers": {
-                "content-length": "1683",
+                "content-length": "1682",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
                 "server": "uvicorn"
               }
             }
@@ -1869,7 +1985,7 @@
               ],
               "summary": "error_rate moved by 0.0 (0.0%) between the prior and current window. total_api_requests registered 140.0 over the same window (parallel signal). These are governed correlations over the same window, not attributions."
             },
-            "elapsed_seconds": 13.086
+            "elapsed_seconds": 9.836
           },
           "tokenUsage": {
             "prompt": 0,
@@ -1981,9 +2097,9 @@
             "status": 200,
             "statusText": "OK",
             "headers": {
-              "content-length": "1683",
+              "content-length": "1682",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
               "server": "uvicorn"
             }
           },
@@ -2053,8 +2169,8 @@
             }
           ]
         },
-        "id": "ad145065-5d39-45ef-a4c9-641e663ca414",
-        "latencyMs": 67110,
+        "id": "3469b6ab-f86b-4d36-bccc-2468efa85427",
+        "latencyMs": 65255,
         "namedScores": {},
         "prompt": {
           "raw": "Why did our recurring revenue drop last month?",
@@ -2068,17 +2184,17 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"unknown_metric\",\"message\":\"Metrics not found in governed catalog: []\",\"proposed_metrics\":[],\"elapsed_seconds\":19.636}",
-          "latencyMs": 67110,
+          "raw": "{\"category\":\"unknown_metric\",\"message\":\"Metrics not found in governed catalog: []\",\"proposed_metrics\":[],\"elapsed_seconds\":6.05}",
+          "latencyMs": 65255,
           "cached": false,
           "metadata": {
             "http": {
               "status": 200,
               "statusText": "OK",
               "headers": {
-                "content-length": "130",
+                "content-length": "128",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
                 "server": "uvicorn"
               }
             }
@@ -2087,7 +2203,7 @@
             "category": "unknown_metric",
             "message": "Metrics not found in governed catalog: []",
             "proposed_metrics": [],
-            "elapsed_seconds": 19.636
+            "elapsed_seconds": 6.05
           },
           "tokenUsage": {
             "prompt": 0,
@@ -2199,9 +2315,9 @@
             "status": 200,
             "statusText": "OK",
             "headers": {
-              "content-length": "130",
+              "content-length": "128",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
               "server": "uvicorn"
             }
           },
@@ -2271,8 +2387,8 @@
             }
           ]
         },
-        "id": "2915ff14-cd19-40f8-a50c-a46527cd598b",
-        "latencyMs": 47453,
+        "id": "d898f9d0-bb88-426f-af57-94e2e2953b42",
+        "latencyMs": 22010,
         "namedScores": {},
         "prompt": {
           "raw": "What was total revenue last quarter?",
@@ -2286,8 +2402,8 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"answered\",\"metric\":\"total_net_revenue\",\"value\":\"1.55894\",\"dimensions\":[],\"time_range\":\"2025-10-01 to 2025-12-31\",\"rows\":[{\"metric_time__week\":\"2025-10-20T00:00:00\",\"total_net_revenue\":\"1.55894\"},{\"metric_time__week\":\"2025-10-27T00:00:00\",\"total_net_revenue\":\"1.8143\"},{\"metric_time__week\":\"2025-11-03T00:00:00\",\"total_net_revenue\":\"1.86117\"},{\"metric_time__week\":\"2025-11-10T00:00:00\",\"total_net_revenue\":\"1.88979\"},{\"metric_time__week\":\"2025-11-17T00:00:00\",\"total_net_revenue\":\"1.89915\"},{\"metric_time__week\":\"2025-11-24T00:00:00\",\"total_net_revenue\":\"1.92044\"},{\"metric_time__week\":\"2025-12-01T00:00:00\",\"total_net_revenue\":\"1.92323\"},{\"metric_time__week\":\"2025-12-08T00:00:00\",\"total_net_revenue\":\"1.96938\"},{\"metric_time__week\":\"2025-12-15T00:00:00\",\"total_net_revenue\":\"1.86315\"},{\"metric_time__week\":\"2025-12-22T00:00:00\",\"total_net_revenue\":\"2.00983\"},{\"metric_time__week\":\"2025-12-29T00:00:00\",\"total_net_revenue\":\"2.02584\"}],\"investigation\":{\"status\":\"not_investigated\",\"steps_taken\":0,\"stopped_reason\":null,\"trace\":[],\"evidence\":[]},\"elapsed_seconds\":8.085}",
-          "latencyMs": 47453,
+          "raw": "{\"category\":\"answered\",\"metric\":\"total_net_revenue\",\"value\":\"1.55894\",\"dimensions\":[],\"time_range\":\"2025-10-01 to 2025-12-31\",\"rows\":[{\"metric_time__week\":\"2025-10-20T00:00:00\",\"total_net_revenue\":\"1.55894\"},{\"metric_time__week\":\"2025-10-27T00:00:00\",\"total_net_revenue\":\"1.8143\"},{\"metric_time__week\":\"2025-11-03T00:00:00\",\"total_net_revenue\":\"1.86117\"},{\"metric_time__week\":\"2025-11-10T00:00:00\",\"total_net_revenue\":\"1.88979\"},{\"metric_time__week\":\"2025-11-17T00:00:00\",\"total_net_revenue\":\"1.89915\"},{\"metric_time__week\":\"2025-11-24T00:00:00\",\"total_net_revenue\":\"1.92044\"},{\"metric_time__week\":\"2025-12-01T00:00:00\",\"total_net_revenue\":\"1.92323\"},{\"metric_time__week\":\"2025-12-08T00:00:00\",\"total_net_revenue\":\"1.96938\"},{\"metric_time__week\":\"2025-12-15T00:00:00\",\"total_net_revenue\":\"1.86315\"},{\"metric_time__week\":\"2025-12-22T00:00:00\",\"total_net_revenue\":\"2.00983\"},{\"metric_time__week\":\"2025-12-29T00:00:00\",\"total_net_revenue\":\"2.02584\"}],\"investigation\":{\"status\":\"not_investigated\",\"steps_taken\":0,\"stopped_reason\":null,\"trace\":[],\"evidence\":[]},\"elapsed_seconds\":6.518}",
+          "latencyMs": 22010,
           "cached": false,
           "metadata": {
             "http": {
@@ -2296,7 +2412,7 @@
               "headers": {
                 "content-length": "1081",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
                 "server": "uvicorn"
               }
             }
@@ -2360,7 +2476,7 @@
               "trace": [],
               "evidence": []
             },
-            "elapsed_seconds": 8.085
+            "elapsed_seconds": 6.518
           },
           "tokenUsage": {
             "prompt": 0,
@@ -2474,7 +2590,7 @@
             "headers": {
               "content-length": "1081",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
               "server": "uvicorn"
             }
           },
@@ -2544,8 +2660,8 @@
             }
           ]
         },
-        "id": "bdd67b42-874c-42e8-ab13-3c4ef183bb97",
-        "latencyMs": 50732,
+        "id": "51e18284-9ec6-4fed-aa72-62c8e2bdfb90",
+        "latencyMs": 34210,
         "namedScores": {},
         "prompt": {
           "raw": "Show me net revenue by product line for this year",
@@ -2559,8 +2675,8 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"answered\",\"metric\":\"total_net_revenue\",\"value\":\"2.02584\",\"dimensions\":[],\"time_range\":\"2026-01-01 to 2026-01-15\",\"rows\":[{\"metric_time__week\":\"2025-12-29T00:00:00\",\"total_net_revenue\":\"2.02584\"},{\"metric_time__week\":\"2026-01-05T00:00:00\",\"total_net_revenue\":\"2.04203\"},{\"metric_time__week\":\"2026-01-12T00:00:00\",\"total_net_revenue\":\"1.98877\"}],\"investigation\":{\"status\":\"not_investigated\",\"steps_taken\":0,\"stopped_reason\":null,\"trace\":[],\"evidence\":[]},\"elapsed_seconds\":7.133}",
-          "latencyMs": 50732,
+          "raw": "{\"category\":\"answered\",\"metric\":\"total_net_revenue\",\"value\":\"2.02584\",\"dimensions\":[],\"time_range\":\"2026-01-01 to 2026-01-15\",\"rows\":[{\"metric_time__week\":\"2025-12-29T00:00:00\",\"total_net_revenue\":\"2.02584\"},{\"metric_time__week\":\"2026-01-05T00:00:00\",\"total_net_revenue\":\"2.04203\"},{\"metric_time__week\":\"2026-01-12T00:00:00\",\"total_net_revenue\":\"1.98877\"}],\"investigation\":{\"status\":\"not_investigated\",\"steps_taken\":0,\"stopped_reason\":null,\"trace\":[],\"evidence\":[]},\"elapsed_seconds\":8.985}",
+          "latencyMs": 34210,
           "cached": false,
           "metadata": {
             "http": {
@@ -2569,7 +2685,7 @@
               "headers": {
                 "content-length": "490",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
                 "server": "uvicorn"
               }
             }
@@ -2601,7 +2717,7 @@
               "trace": [],
               "evidence": []
             },
-            "elapsed_seconds": 7.133
+            "elapsed_seconds": 8.985
           },
           "tokenUsage": {
             "prompt": 0,
@@ -2715,7 +2831,7 @@
             "headers": {
               "content-length": "490",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
               "server": "uvicorn"
             }
           },
@@ -2785,8 +2901,8 @@
             }
           ]
         },
-        "id": "f2dcf144-9041-4796-9318-f5776719822d",
-        "latencyMs": 46735,
+        "id": "71409df6-aae1-4f6b-93b1-5ca8cc3100ae",
+        "latencyMs": 27676,
         "namedScores": {},
         "prompt": {
           "raw": "Which model used the most tokens last week?",
@@ -2800,17 +2916,17 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"answered\",\"metric\":\"total_tokens_consumed\",\"value\":\"45810\",\"dimensions\":[\"model_variant\"],\"time_range\":\"2026-01-05 to 2026-01-11\",\"rows\":[{\"model_variant\":\"llama-3.1_405b_20240723\",\"total_tokens_consumed\":\"45810\"},{\"model_variant\":\"claude-sonnet-4_200k_20250514\",\"total_tokens_consumed\":\"44785\"},{\"model_variant\":\"claude-3.5-sonnet_200k_20241022\",\"total_tokens_consumed\":\"42929\"},{\"model_variant\":\"claude-3-opus_200k_20240229\",\"total_tokens_consumed\":\"36075\"},{\"model_variant\":\"llama-3.1_70b_20240723\",\"total_tokens_consumed\":\"34145\"},{\"model_variant\":\"gpt-4o_128k_20240513\",\"total_tokens_consumed\":\"33683\"},{\"model_variant\":\"gemini-1.5-pro_1m_20240214\",\"total_tokens_consumed\":\"30150\"},{\"model_variant\":\"gpt-4-turbo_128k_20240409\",\"total_tokens_consumed\":\"28550\"},{\"model_variant\":\"mixtral-8x7b_32k_20231211\",\"total_tokens_consumed\":\"26815\"},{\"model_variant\":\"mistral-large_128k_20240724\",\"total_tokens_consumed\":\"26685\"},{\"model_variant\":\"claude-3-haiku_200k_20240307\",\"total_tokens_consumed\":\"14059\"},{\"model_variant\":\"mistral_7b_32k_20240522\",\"total_tokens_consumed\":\"5747\"},{\"model_variant\":\"gemini-1.5-flash_1m_20240214\",\"total_tokens_consumed\":\"5325\"}],\"argmax\":{\"model_variant\":\"llama-3.1_405b_20240723\",\"total_tokens_consumed\":\"45810\"},\"investigation\":{\"status\":\"not_investigated\",\"steps_taken\":0,\"stopped_reason\":null,\"trace\":[],\"evidence\":[]},\"elapsed_seconds\":6.85}",
-          "latencyMs": 46735,
+          "raw": "{\"category\":\"answered\",\"metric\":\"total_tokens_consumed\",\"value\":\"45810\",\"dimensions\":[\"model_variant\"],\"time_range\":\"2026-01-05 to 2026-01-11\",\"rows\":[{\"model_variant\":\"llama-3.1_405b_20240723\",\"total_tokens_consumed\":\"45810\"},{\"model_variant\":\"claude-sonnet-4_200k_20250514\",\"total_tokens_consumed\":\"44785\"},{\"model_variant\":\"claude-3.5-sonnet_200k_20241022\",\"total_tokens_consumed\":\"42929\"},{\"model_variant\":\"claude-3-opus_200k_20240229\",\"total_tokens_consumed\":\"36075\"},{\"model_variant\":\"llama-3.1_70b_20240723\",\"total_tokens_consumed\":\"34145\"},{\"model_variant\":\"gpt-4o_128k_20240513\",\"total_tokens_consumed\":\"33683\"},{\"model_variant\":\"gemini-1.5-pro_1m_20240214\",\"total_tokens_consumed\":\"30150\"},{\"model_variant\":\"gpt-4-turbo_128k_20240409\",\"total_tokens_consumed\":\"28550\"},{\"model_variant\":\"mixtral-8x7b_32k_20231211\",\"total_tokens_consumed\":\"26815\"},{\"model_variant\":\"mistral-large_128k_20240724\",\"total_tokens_consumed\":\"26685\"},{\"model_variant\":\"claude-3-haiku_200k_20240307\",\"total_tokens_consumed\":\"14059\"},{\"model_variant\":\"mistral_7b_32k_20240522\",\"total_tokens_consumed\":\"5747\"},{\"model_variant\":\"gemini-1.5-flash_1m_20240214\",\"total_tokens_consumed\":\"5325\"}],\"argmax\":{\"model_variant\":\"llama-3.1_405b_20240723\",\"total_tokens_consumed\":\"45810\"},\"investigation\":{\"status\":\"not_investigated\",\"steps_taken\":0,\"stopped_reason\":null,\"trace\":[],\"evidence\":[]},\"elapsed_seconds\":8.841}",
+          "latencyMs": 27676,
           "cached": false,
           "metadata": {
             "http": {
               "status": 200,
               "statusText": "OK",
               "headers": {
-                "content-length": "1390",
+                "content-length": "1391",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
                 "server": "uvicorn"
               }
             }
@@ -2888,7 +3004,7 @@
               "trace": [],
               "evidence": []
             },
-            "elapsed_seconds": 6.85
+            "elapsed_seconds": 8.841
           },
           "tokenUsage": {
             "prompt": 0,
@@ -3000,9 +3116,9 @@
             "status": 200,
             "statusText": "OK",
             "headers": {
-              "content-length": "1390",
+              "content-length": "1391",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
               "server": "uvicorn"
             }
           },
@@ -3072,8 +3188,8 @@
             }
           ]
         },
-        "id": "76120439-9c10-4fce-b593-21df6164db4a",
-        "latencyMs": 48872,
+        "id": "5c051356-3779-47e6-96ca-ecaa4647e783",
+        "latencyMs": 33400,
         "namedScores": {},
         "prompt": {
           "raw": "What is our year-to-date net revenue?",
@@ -3087,17 +3203,17 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"answered\",\"metric\":\"ytd_net_revenue\",\"value\":\"5.55259\",\"dimensions\":[],\"time_range\":\"all available\",\"rows\":[{\"metric_time__day\":\"2026-01-01T00:00:00\",\"ytd_net_revenue\":\"5.55259\"}],\"investigation\":{\"status\":\"not_investigated\",\"steps_taken\":0,\"stopped_reason\":null,\"trace\":[],\"evidence\":[]},\"elapsed_seconds\":11.484}",
-          "latencyMs": 48872,
+          "raw": "{\"category\":\"answered\",\"metric\":\"ytd_net_revenue\",\"value\":\"5.55259\",\"dimensions\":[],\"time_range\":\"all available\",\"rows\":[{\"metric_time__day\":\"2026-01-01T00:00:00\",\"ytd_net_revenue\":\"5.55259\"}],\"investigation\":{\"status\":\"not_investigated\",\"steps_taken\":0,\"stopped_reason\":null,\"trace\":[],\"evidence\":[]},\"elapsed_seconds\":9.479}",
+          "latencyMs": 33400,
           "cached": false,
           "metadata": {
             "http": {
               "status": 200,
               "statusText": "OK",
               "headers": {
-                "content-length": "327",
+                "content-length": "326",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
                 "server": "uvicorn"
               }
             }
@@ -3121,7 +3237,7 @@
               "trace": [],
               "evidence": []
             },
-            "elapsed_seconds": 11.484
+            "elapsed_seconds": 9.479
           },
           "tokenUsage": {
             "prompt": 0,
@@ -3233,9 +3349,9 @@
             "status": 200,
             "statusText": "OK",
             "headers": {
-              "content-length": "327",
+              "content-length": "326",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
               "server": "uvicorn"
             }
           },
@@ -3305,8 +3421,8 @@
             }
           ]
         },
-        "id": "36577f21-8483-480b-b50a-a91c9d5e8e69",
-        "latencyMs": 41725,
+        "id": "4d34ff67-6184-49e0-830a-9b931329941e",
+        "latencyMs": 42052,
         "namedScores": {},
         "prompt": {
           "raw": "How many unique customers did we have this quarter?",
@@ -3320,17 +3436,17 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"answered\",\"metric\":\"unique_customers\",\"value\":\"20\",\"dimensions\":[],\"time_range\":\"2026-01-01 to 2026-03-31\",\"rows\":[{\"metric_time__week\":\"2025-12-29T00:00:00\",\"unique_customers\":\"20\"},{\"metric_time__week\":\"2026-01-05T00:00:00\",\"unique_customers\":\"20\"},{\"metric_time__week\":\"2026-01-12T00:00:00\",\"unique_customers\":\"53\"},{\"metric_time__week\":\"2026-01-19T00:00:00\",\"unique_customers\":\"20\"}],\"investigation\":{\"status\":\"not_investigated\",\"steps_taken\":0,\"stopped_reason\":null,\"trace\":[],\"evidence\":[]},\"elapsed_seconds\":10.276}",
-          "latencyMs": 41725,
+          "raw": "{\"category\":\"answered\",\"metric\":\"unique_customers\",\"value\":\"20\",\"dimensions\":[],\"time_range\":\"2026-01-01 to 2026-03-31\",\"rows\":[{\"metric_time__week\":\"2025-12-29T00:00:00\",\"unique_customers\":\"20\"},{\"metric_time__week\":\"2026-01-05T00:00:00\",\"unique_customers\":\"20\"},{\"metric_time__week\":\"2026-01-12T00:00:00\",\"unique_customers\":\"53\"},{\"metric_time__week\":\"2026-01-19T00:00:00\",\"unique_customers\":\"20\"}],\"investigation\":{\"status\":\"not_investigated\",\"steps_taken\":0,\"stopped_reason\":null,\"trace\":[],\"evidence\":[]},\"elapsed_seconds\":7.629}",
+          "latencyMs": 42052,
           "cached": false,
           "metadata": {
             "http": {
               "status": 200,
               "statusText": "OK",
               "headers": {
-                "content-length": "535",
+                "content-length": "534",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:50:30 GMT",
                 "server": "uvicorn"
               }
             }
@@ -3366,7 +3482,7 @@
               "trace": [],
               "evidence": []
             },
-            "elapsed_seconds": 10.276
+            "elapsed_seconds": 7.629
           },
           "tokenUsage": {
             "prompt": 0,
@@ -3478,9 +3594,9 @@
             "status": 200,
             "statusText": "OK",
             "headers": {
-              "content-length": "535",
+              "content-length": "534",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:50:30 GMT",
               "server": "uvicorn"
             }
           },
@@ -3550,8 +3666,8 @@
             }
           ]
         },
-        "id": "27d3f15a-e8d9-4a18-9e9d-cd48e8b130be",
-        "latencyMs": 41590,
+        "id": "a631a2b8-aff2-48ec-a9ca-16094415eee7",
+        "latencyMs": 22743,
         "namedScores": {},
         "prompt": {
           "raw": "What was total token usage yesterday?",
@@ -3565,17 +3681,17 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"answered\",\"metric\":\"total_tokens_consumed\",\"value\":\"374758\",\"dimensions\":[],\"time_range\":\"all available\",\"rows\":[{\"metric_time__month\":\"2026-01-01T00:00:00\",\"total_tokens_consumed\":\"374758\"}],\"investigation\":{\"status\":\"not_investigated\",\"steps_taken\":0,\"stopped_reason\":null,\"trace\":[],\"evidence\":[]},\"elapsed_seconds\":11.514}",
-          "latencyMs": 41590,
+          "raw": "{\"category\":\"answered\",\"metric\":\"total_tokens_consumed\",\"value\":\"374758\",\"dimensions\":[],\"time_range\":\"all available\",\"rows\":[{\"metric_time__month\":\"2026-01-01T00:00:00\",\"total_tokens_consumed\":\"374758\"}],\"investigation\":{\"status\":\"not_investigated\",\"steps_taken\":0,\"stopped_reason\":null,\"trace\":[],\"evidence\":[]},\"elapsed_seconds\":7.191}",
+          "latencyMs": 22743,
           "cached": false,
           "metadata": {
             "http": {
               "status": 200,
               "statusText": "OK",
               "headers": {
-                "content-length": "339",
+                "content-length": "338",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
                 "server": "uvicorn"
               }
             }
@@ -3599,7 +3715,7 @@
               "trace": [],
               "evidence": []
             },
-            "elapsed_seconds": 11.514
+            "elapsed_seconds": 7.191
           },
           "tokenUsage": {
             "prompt": 0,
@@ -3711,9 +3827,9 @@
             "status": 200,
             "statusText": "OK",
             "headers": {
-              "content-length": "339",
+              "content-length": "338",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
               "server": "uvicorn"
             }
           },
@@ -3783,8 +3899,8 @@
             }
           ]
         },
-        "id": "4b7ef721-77d7-4024-9abe-a9ddc0bd79f9",
-        "latencyMs": 30054,
+        "id": "8a134fac-aa8a-4b54-9fe2-a88ee3c74f99",
+        "latencyMs": 10873,
         "namedScores": {},
         "prompt": {
           "raw": "What is the employee headcount by department?",
@@ -3798,8 +3914,8 @@
           "label": ""
         },
         "response": {
-          "raw": "{\"category\":\"unsupported_domain\",\"message\":\"Domain 'HR' is not supported by the governed catalog\",\"domain\":\"HR\",\"elapsed_seconds\":8.273}",
-          "latencyMs": 30054,
+          "raw": "{\"category\":\"unsupported_domain\",\"message\":\"Domain 'HR' is not supported by the governed catalog\",\"domain\":\"HR\",\"elapsed_seconds\":3.669}",
+          "latencyMs": 10873,
           "cached": false,
           "metadata": {
             "http": {
@@ -3808,7 +3924,7 @@
               "headers": {
                 "content-length": "136",
                 "content-type": "application/json",
-                "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+                "date": "Sat, 11 Jul 2026 19:48:13 GMT",
                 "server": "uvicorn"
               }
             }
@@ -3817,7 +3933,7 @@
             "category": "unsupported_domain",
             "message": "Domain 'HR' is not supported by the governed catalog",
             "domain": "HR",
-            "elapsed_seconds": 8.273
+            "elapsed_seconds": 3.669
           },
           "tokenUsage": {
             "prompt": 0,
@@ -3931,7 +4047,7 @@
             "headers": {
               "content-length": "136",
               "content-type": "application/json",
-              "date": "Sat, 11 Jul 2026 18:58:46 GMT",
+              "date": "Sat, 11 Jul 2026 19:48:13 GMT",
               "server": "uvicorn"
             }
           },
@@ -3941,8 +4057,8 @@
       }
     ],
     "stats": {
-      "successes": 13,
-      "failures": 1,
+      "successes": 14,
+      "failures": 0,
       "errors": 0,
       "tokenUsage": {
         "prompt": 0,
@@ -3972,8 +4088,8 @@
           }
         }
       },
-      "durationMs": 230107,
-      "evaluationDurationMs": 230107
+      "durationMs": 144938,
+      "evaluationDurationMs": 144938
     }
   },
   "config": {
@@ -4042,7 +4158,7 @@
       },
       {
         "vars": {
-          "question": "What's behind the shift in input tokens last week?",
+          "question": "What's behind the shift in total input tokens last week?",
           "expected_intent": "investigative",
           "expected_category": "answered",
           "expected_metric": "total_input_tokens",
@@ -4224,7 +4340,7 @@
       "metadata": {}
     },
     "outputPath": [
-      "/private/tmp/claude-501/-Users-kanjasaha-Documents-btg-case-studies-with-dbt-single-dbt-opensource/1bc05d93-b5e8-466b-9c47-c058aa6aff63/scratchpad/investigation_eval.json"
+      "/private/tmp/claude-501/-Users-kanjasaha-Documents-btg-case-studies-with-dbt-single-dbt-opensource/1bc05d93-b5e8-466b-9c47-c058aa6aff63/scratchpad/investigation_confirm.json"
     ],
     "extensions": [],
     "metadata": {},
@@ -4236,8 +4352,8 @@
     "nodeVersion": "v25.9.0",
     "platform": "darwin",
     "arch": "arm64",
-    "exportedAt": "2026-07-11T19:02:36.786Z",
-    "evaluationCreatedAt": "2026-07-11T18:58:46.641Z"
+    "exportedAt": "2026-07-11T19:50:38.619Z",
+    "evaluationCreatedAt": "2026-07-11T19:48:13.653Z"
   },
   "vars": [
     "question",
