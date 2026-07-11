@@ -3,7 +3,8 @@ FastAPI application for the Governed Metric Execution Architecture.
 
 Endpoints
 ---------
-``GET  /``          — API info
+``GET  /``          — redirect to the static frontend (``/frontend/``)
+``GET  /info``      — API info (service metadata JSON)
 ``GET  /health``    — health check
 ``GET  /catalog``   — compact metric catalog (JSON)
 ``POST /query``     — submit a natural-language question
@@ -23,7 +24,7 @@ from typing import Any
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from opentelemetry import trace
@@ -202,13 +203,20 @@ def _check_mf_cli() -> bool:
 
 
 @app.get("/")
-async def root() -> dict[str, Any]:
-    """API root — returns info about the service."""
+async def root() -> RedirectResponse:
+    """Redirect the base URL to the static frontend SPA."""
+    return RedirectResponse(url="/frontend/", status_code=307)
+
+
+@app.get("/info")
+async def info() -> dict[str, Any]:
+    """API info — returns metadata about the service."""
     return {
         "service": APP_TITLE,
         "version": APP_VERSION,
         "endpoints": {
-            "/": "this info",
+            "/": "redirect to the frontend (/frontend/)",
+            "/info": "this info",
             "/health": "health check",
             "/catalog": "compact metric catalog (no LLM call)",
             "/query": "submit question (POST)",
