@@ -8,12 +8,6 @@
             [
                 "alter table {{ this }} drop constraint if exists fct_quota_weekly_pk",
                 "alter table {{ this }} add constraint fct_quota_weekly_pk primary key (quota_week_id)",
-                "alter table {{ this }} drop constraint if exists fct_quota_weekly_customer_fk",
-                "alter table {{ this }} add constraint fct_quota_weekly_customer_fk foreign key (account_id) references {{ ref('dim_customer') }} (account_id)",
-                "alter table {{ this }} drop constraint if exists fct_quota_weekly_model_fk",
-                "alter table {{ this }} add constraint fct_quota_weekly_model_fk foreign key (model_variant) references {{ ref('dim_model') }} (model_variant)",
-                "alter table {{ this }} drop constraint if exists fct_quota_weekly_region_fk",
-                "alter table {{ this }} add constraint fct_quota_weekly_region_fk foreign key (source_region) references {{ ref('dim_region') }} (source_region)"
             ] if target.name not in ['prod', 'ci'] else []
         )
     )

@@ -1,12 +1,6 @@
 {{
     config(
-        materialized='table',
-        post_hook=(
-            [
-                "do $$ declare r regclass; begin select conrelid into r from pg_constraint where conname = 'dim_model_pk'; if r is not null then execute format('alter table %s drop constraint dim_model_pk', r); end if; end $$;",
-                "alter table {{ this }} add constraint dim_model_pk primary key (model_variant)"
-            ] if target.name not in ['prod', 'ci'] else []
-        )
+        materialized='table'
     )
 }}
 
