@@ -223,7 +223,7 @@ models:
   # int_revenue_daily
   # ============================================================================
   - name: int_revenue_daily
-    description: "Daily revenue enriched with customer, model, and region dimensions. One row per account, model, region, and revenue date. Net revenue derived as gross revenue minus savings plan and discounts."
+    description: "Daily revenue at the account × model × region × day grain, carrying foreign keys and revenue measures only. Net revenue derived as gross revenue minus savings plan and discounts. Dimension attributes (company, segment, model family, territory, etc.) are intentionally NOT denormalized here — downstream marts resolve them by joining the conformed dims (dim_customer / dim_model / dim_region)."
     config:
       group: finance
       access: private
@@ -231,41 +231,11 @@ models:
 
     columns:
 
-      # -- Customer dimensions --
+      # -- Customer foreign key --
       - name: account_id
         description: "Customer account identifier"
         tests:
           - not_null
-
-      - name: company_name
-        description: "Company name from customer_details"
-        tests:
-          - not_null:
-              config:
-                severity: warn
-                # warn — NULL when account_id has no matching row in stg_customer_details.
-                # Orphaned accounts are caught at the staging layer (relationships test).
-
-      - name: segment
-        description: "Account segment: Strategic, Commercial"
-        tests:
-          - not_null:
-              config:
-                severity: warn
-
-      - name: vertical
-        description: "Industry vertical"
-        tests:
-          - not_null:
-              config:
-                severity: warn
-
-      - name: account_size
-        description: "Account size: Enterprise, Mid-Market, SMB"
-        tests:
-          - not_null:
-              config:
-                severity: warn
 
       # -- Model dimensions --
       - name: model_variant
@@ -288,23 +258,11 @@ models:
         tests:
           - not_null
 
-      - name: model_family
-        description: "Model family from config_model_dimensions"
-
-      - name: model_publisher
-        description: "Model publisher from config_model_dimensions"
-
-      # -- Region dimensions --
+      # -- Region foreign key --
       - name: source_region
         description: "AWS source region"
         tests:
           - not_null
-
-      - name: territory
-        description: "AWS territory from region_mapping seed"
-
-      - name: govcloud
-        description: "True if this is an AWS GovCloud region"
 
       # -- Revenue metrics --
       - name: gross_rev_input_tokens
@@ -347,6 +305,9 @@ models:
         description: "Date of the revenue — grain of this table"
         tests:
           - not_null
+
+      - name: snapshot_date
+        description: "Snapshot date of the source revenue extract"
 
       - name: currency_code
         description: "Currency code e.g. USD"
