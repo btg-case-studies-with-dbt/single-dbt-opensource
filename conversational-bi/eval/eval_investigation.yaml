@@ -1,0 +1,67 @@
+# promptfoo eval config — Agentic Investigation Loop: the NEVER-FABRICATE gate.
+# Task 5.4 (ai-architect). This is the TARGET the SSE builds the loop to pass
+# (eval-first). Design: docs/05.DETAILED_DESIGN.md "Agentic Investigation Loop"
+# (APPROVED gate-2 2026-07-11) + DECISION_LOG #13/#14. Decision 1 = (A): the loop
+# fires on investigative intent only.
+#
+# SEPARATE from eval_config.yaml (the metric-routing / TR12 eval), which stays
+# intact. Run: promptfoo eval --config eval/eval_investigation.yaml
+#
+# ⚠️ THE FULL RUN IS POST-SSE. The loop CODE does not exist yet; against the
+# current single-shot backend every investigative row fails A2 (no investigation
+# block). That is correct: this config is the acceptance target, not a passing
+# suite today. Non-vacuity (that the assertions CAN fail a fabrication) is proven
+# NOW, without the backend, by: node eval/selftest_assertions.cjs
+#
+# Assertions live in investigation_assertions.js (single source of truth, shared
+# with the self-test) and are attached below under defaultTest.assert (global
+# asserts for CSV-loaded tests MUST live here — DECISION_LOG #8b).
+
+prompts:
+  - "{{question}}"
+
+providers:
+  - id: "http:localhost:8000/query"
+    config:
+      method: "POST"
+      headers:
+        Content-Type: "application/json"
+      body:
+        question: "{{question}}"
+        # Pin the eval's "now" into the revenue/token/quota data window
+        # (metric_time 2025-10-20 → 2026-01-19), same as eval_config.yaml.
+        # 2026-01-15 → "last month"=Dec 2025, "last quarter"=Q4 2025,
+        # "last week"≈Jan 5–11 2026, "yesterday"=Jan 14 — all in-window.
+        time_override: "2026-01-15"
+
+tests: "investigation_questions.csv"
+
+defaultTest:
+  assert:
+    # (d) FLOOR: correct category, and — when answered — correct metric + real
+    #     value + rows, even if the investigation is partial or absent.
+    - type: "javascript"
+      value: "file://investigation_assertions.js:baseFloor"
+
+    # (e) + Decision-1(A) TRIGGER: lookups carry not_investigated (loop did NOT
+    #     fire); investigative-on-answered runs it; non-answered base short-circuits.
+    - type: "javascript"
+      value: "file://investigation_assertions.js:intentStatus"
+
+    # (a) EVERY evidence factor is governed:true, relationship:"correlation", and
+    #     source_tool_call_step points at an 'answered' trace step. Also fails any
+    #     factor fabricated over a per-row forbidden dimension (e.g. region).
+    - type: "javascript"
+      value: "file://investigation_assertions.js:evidenceGoverned"
+
+    # (b) ZERO causal connectives in any narrative string; ZERO banned causal
+    #     field names anywhere — causation is structurally unrepresentable.
+    - type: "javascript"
+      value: "file://investigation_assertions.js:noCausalLanguage"
+
+    # (c) TERMINATION: steps_taken<=6, trace length agrees, no duplicate
+    #     loop-guard signatures, abstained branches contribute no evidence.
+    - type: "javascript"
+      value: "file://investigation_assertions.js:termination"
+
+description: "BTG Conversational BI — Agentic Investigation Loop never-fabricate gate (14 rows; TARGET for SSE 5.5)"

@@ -1,0 +1,21 @@
+question,expected_intent,note
+Why did total net revenue change last month?,investigative,explanatory-why
+What drove the change in total tokens consumed last week?,investigative,what-drove
+What caused revenue to fall last quarter?,investigative,what-caused
+What's behind the shift in input tokens last week?,investigative,whats-behind
+Explain the drop in gross revenue this month.,investigative,explain-verb
+Break down the movement in gross revenue this quarter.,investigative,breakdown-of-movement
+What accounts for the increase in token usage last week?,investigative,accounts-for
+Why is our error rate up week over week?,investigative,why-movement
+What is driving the decline in net revenue?,investigative,is-driving
+Reason for the spike in output tokens last week?,investigative,reason-for
+What was total revenue last quarter?,lookup,plain-total
+Show me net revenue by product line for this year,lookup,plain-groupby-NOT-investigative
+How much net revenue did we earn this month by customer segment?,lookup,plain-groupby-NOT-investigative
+Which model used the most tokens last week?,lookup,argmax-NOT-investigative
+Which customer used the fewest tokens last week?,lookup,argmin-NOT-investigative
+What is our year-to-date net revenue?,lookup,plain-ytd
+Revenue growth rate compared to last quarter?,lookup,comparison-metric-NOT-investigative
+How many unique customers did we have this quarter?,lookup,plain-count
+What is our quota utilization percentage by model?,lookup,plain-groupby-ratio
+What was total token usage yesterday?,lookup,plain-total
