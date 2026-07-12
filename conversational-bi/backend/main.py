@@ -268,7 +268,8 @@ async def query(request: Request) -> dict[str, Any]:
             "question": "What was total net revenue last week?",
             "provider": "ollama",          // optional
             "model": "llama3.2",           // optional
-            "time_override": "2026-07-08"  // optional, YYYY-MM-DD
+            "time_override": "2026-07-08", // optional, YYYY-MM-DD
+            "continuation": {...}          // optional, from an ambiguous response
         }
     """
     body = await request.json()
@@ -276,6 +277,7 @@ async def query(request: Request) -> dict[str, Any]:
     provider: str | None = body.get("provider")
     model: str | None = body.get("model")
     time_override: str | None = body.get("time_override")
+    continuation: dict[str, Any] | None = body.get("continuation")
 
     if not question:
         raise HTTPException(status_code=422, detail="'question' field is required")
@@ -294,52 +296,82 @@ async def query(request: Request) -> dict[str, Any]:
 
     # import llm client, query translator, and investigation orchestrator
     # (late import for clean startup)
-    from . import agent_graph, llm_client  # noqa: PLC0415
+    from . import agent_graph, llm_client, query_translator  # noqa: PLC0415
 
     start = time.monotonic()
 
     tracer = _tracer or _noop_tracer
     with tracer.start_as_current_span("query") as span:  # type: ignore[union-attr]
-        # Route to LiteLLM proxy or native llm_client
+        llm_result: dict[str, Any] | None = None
+        routing_question = question
+        clarification_event = bool(continuation)
+        clarification_selected_metric: str | None = None
+        clarification_resolution: dict[str, Any] | None = None
+
+        if continuation:
+            clarification_resolution = query_translator.resolve_clarification_reply(
+                question,
+                continuation,
+                app.state.catalog,
+            )
+            if clarification_resolution.get("ok"):
+                llm_result = clarification_resolution["llm_result"]
+                routing_question = _pii_redactor.redact(
+                    str(clarification_resolution.get("question") or question)
+                )
+                clarification_selected_metric = clarification_resolution.get("selected_metric")
+                logger.info(
+                    "Clarification resolved: choice=%s metric=%s",
+                    clarification_resolution.get("selected_choice_id"),
+                    clarification_selected_metric,
+                )
+            else:
+                outcome = clarification_resolution["outcome"]
+
+        # Route to LiteLLM proxy or native llm_client unless this is a resolved
+        # continuation reply (which already has a deterministic selection) or a
+        # rejected continuation reply (which already has an outcome).
         config_provider = (provider or os.environ.get("LLM_PROVIDER", "ollama")).lower()
 
-        if config_provider == "litellm":
-            proxy = litellm_gateway.LiteLLMProxy(config=LITELLM_CONFIG)
-            llm_result = proxy.select_metrics(
-                question=question,
-                catalog=app.state.catalog,
-                provider=provider,
-                model=model,
-            )
-        else:
-            # get LLM selection via native client (default path)
-            _native_default_model = {
-                "openai": llm_client.DEFAULT_OPENAI_MODEL,
-                "anthropic": llm_client.DEFAULT_ANTHROPIC_MODEL,
-            }.get(config_provider, llm_client.DEFAULT_OLLAMA_MODEL)
-            logger.info(
-                "Query routed to native LLM client: provider=%s model=%s",
-                config_provider,
-                model or _native_default_model,
-            )
-            llm_result = llm_client.select_metrics(
-                question=question,
-                catalog=app.state.catalog,
-                provider=provider,
-                model=model,
-            )
+        if not continuation or (clarification_resolution and clarification_resolution.get("ok")):
+            if llm_result is None:
+                if config_provider == "litellm":
+                    proxy = litellm_gateway.LiteLLMProxy(config=LITELLM_CONFIG)
+                    llm_result = proxy.select_metrics(
+                        question=question,
+                        catalog=app.state.catalog,
+                        provider=provider,
+                        model=model,
+                    )
+                else:
+                    # get LLM selection via native client (default path)
+                    _native_default_model = {
+                        "openai": llm_client.DEFAULT_OPENAI_MODEL,
+                        "anthropic": llm_client.DEFAULT_ANTHROPIC_MODEL,
+                    }.get(config_provider, llm_client.DEFAULT_OLLAMA_MODEL)
+                    logger.info(
+                        "Query routed to native LLM client: provider=%s model=%s",
+                        config_provider,
+                        model or _native_default_model,
+                    )
+                    llm_result = llm_client.select_metrics(
+                        question=question,
+                        catalog=app.state.catalog,
+                        provider=provider,
+                        model=model,
+                    )
 
-        # process question through the five-category router, then the intent
-        # gate: investigative + answered runs the bounded investigation loop;
-        # everything else keeps the single-shot shape (Decision 1 = A). The base
-        # answer is the guaranteed floor and is never regressed by investigation.
-        outcome = agent_graph.run_query(
-            question=question,
-            catalog=app.state.catalog,
-            llm_result=llm_result,
-            time_override=time_override,
-            investigation_enabled=INVESTIGATION_ENABLED,
-        )
+            # process question through the five-category router, then the intent
+            # gate: investigative + answered runs the bounded investigation loop;
+            # everything else keeps the single-shot shape (Decision 1 = A). The base
+            # answer is the guaranteed floor and is never regressed by investigation.
+            outcome = agent_graph.run_query(
+                question=routing_question,
+                catalog=app.state.catalog,
+                llm_result=llm_result,
+                time_override=time_override,
+                investigation_enabled=INVESTIGATION_ENABLED,
+            )
         elapsed = time.monotonic() - start
 
         # ── operability: surface investigation health (3 a.m. readability) ──
@@ -388,6 +420,8 @@ async def query(request: Request) -> dict[str, Any]:
             "dimensions": outcome.get("dimensions"),
             "time_range": outcome.get("time_range"),
             "domain": llm_result.get("domain") if llm_result else None,
+            "clarification_event": clarification_event,
+            "clarification_selected_metric": clarification_selected_metric,
             "investigation_status": inv_status,
             "investigation_steps": inv_steps,
             "investigation_stopped_reason": inv_stopped,

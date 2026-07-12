@@ -68,11 +68,175 @@ def _ungoverned_metric_gap(proposed: list[str], phrase: str) -> dict[str, Any]:
     }
 
 
-def _ambiguous(metrics: list[str]) -> dict[str, Any]:
-    return {
+def _ambiguous(
+    metrics: list[str],
+    catalog: dict[str, Any] | None = None,
+    question: str = "",
+    llm_result: dict[str, Any] | None = None,
+    *,
+    terminal: bool = False,
+    reason: str | None = None,
+) -> dict[str, Any]:
+    outcome = {
         "category": "ambiguous",
         "message": f"Question matched multiple metrics: {metrics}",
         "proposed_metrics": metrics,
+    }
+    if reason:
+        outcome["reason"] = reason
+    if terminal or not catalog:
+        return outcome
+
+    choices = _clarify_choices(metrics, catalog)
+    if len(choices) < 2:
+        return outcome
+
+    choice_text = "; ".join(f"{c['id']}) {c['label']} ({c['metric']})" for c in choices)
+    outcome["clarifying_question"] = f"Which governed metric should I use? {choice_text}"
+    outcome["choices"] = choices
+    outcome["continuation"] = {
+        "type": "metric_clarification",
+        "version": 1,
+        "original_question": question,
+        "selection": {
+            "dimensions": list((llm_result or {}).get("dimensions", []) or []),
+            "time_range": (llm_result or {}).get("time_range", ""),
+            "domain": (llm_result or {}).get("domain"),
+            "filters": list((llm_result or {}).get("filters", []) or []),
+            "rank": (llm_result or {}).get("rank"),
+        },
+        "choices": choices,
+        "rounds_remaining": 0,
+    }
+    return outcome
+
+
+def _clarify_choices(metrics: list[str], catalog: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return catalog-grounded clarify choices for proposed metric names."""
+    metric_lookup = {m["name"]: m for m in catalog.get("metrics", [])}
+    choices: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for metric_name in metrics:
+        if metric_name in seen:
+            continue
+        metric = metric_lookup.get(metric_name)
+        if not metric:
+            continue
+        seen.add(metric_name)
+        choices.append(
+            {
+                "id": str(len(choices) + 1),
+                "metric": metric_name,
+                "label": metric.get("label") or metric_name,
+                "domain": metric.get("domain"),
+            }
+        )
+    return choices
+
+
+def _normalize_clarification_text(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", str(value or "").lower()).strip()
+
+
+def _choice_matches_reply(reply: str, choice: dict[str, Any]) -> bool:
+    reply_norm = _normalize_clarification_text(reply)
+    if not reply_norm:
+        return False
+    if reply_norm == _normalize_clarification_text(choice.get("id")):
+        return True
+
+    candidates = {
+        _normalize_clarification_text(choice.get("metric")),
+        _normalize_clarification_text(str(choice.get("metric") or "").replace("_", " ")),
+        _normalize_clarification_text(choice.get("label")),
+    }
+    candidates.discard("")
+    if reply_norm in candidates:
+        return True
+    if any(candidate and candidate in reply_norm for candidate in candidates):
+        return True
+
+    reply_tokens = [t for t in reply_norm.split() if len(t) >= 3]
+    if len(reply_tokens) == 1:
+        token = reply_tokens[0]
+        return any(token in candidate.split() for candidate in candidates)
+    if reply_tokens:
+        return any(all(token in candidate.split() for token in reply_tokens) for candidate in candidates)
+    return False
+
+
+def resolve_clarification_reply(
+    reply: str,
+    continuation: dict[str, Any],
+    catalog: dict[str, Any],
+) -> dict[str, Any]:
+    """Resolve a one-round clarify reply into a governed LLM-selection surrogate.
+
+    The server remains stateless: the client carries the offered choices back,
+    and this resolver maps the user's short reply to exactly one choice. It
+    still revalidates the chosen metric against the live catalog before the
+    normal MetricFlow path runs, so a forged continuation cannot introduce an
+    unknown metric or bypass downstream guards.
+    """
+    if not isinstance(continuation, dict) or continuation.get("type") != "metric_clarification":
+        outcome = _unknown_metric([])
+        outcome["reason"] = "invalid_continuation"
+        outcome["message"] = "The clarification context is missing or invalid."
+        return {"ok": False, "outcome": outcome}
+
+    raw_choices = continuation.get("choices") or []
+    if not isinstance(raw_choices, list):
+        raw_choices = []
+
+    metric_lookup = {m["name"]: m for m in catalog.get("metrics", [])}
+    choices = [
+        c
+        for c in raw_choices
+        if isinstance(c, dict) and c.get("metric") in metric_lookup
+    ]
+    matches = [c for c in choices if _choice_matches_reply(reply, c)]
+
+    if not matches:
+        outcome = _unknown_metric([str(c.get("metric")) for c in choices])
+        outcome["reason"] = "invalid_clarification_reply"
+        outcome["message"] = (
+            "That reply did not match one of the governed clarification choices. "
+            "Ask the question again with a governed metric name."
+        )
+        return {"ok": False, "outcome": outcome}
+
+    if len(matches) > 1:
+        outcome = _ambiguous(
+            [str(c.get("metric")) for c in matches],
+            terminal=True,
+            reason="clarification_reply_ambiguous",
+        )
+        outcome["message"] = (
+            "That reply still matches more than one governed choice; ask the "
+            "question again with one exact metric name."
+        )
+        return {"ok": False, "outcome": outcome}
+
+    selected = matches[0]
+    selection = continuation.get("selection") or {}
+    if not isinstance(selection, dict):
+        selection = {}
+    llm_result = {
+        "classification": "answered",
+        "metrics": [selected["metric"]],
+        "dimensions": list(selection.get("dimensions", []) or []),
+        "time_range": selection.get("time_range", ""),
+        "domain": selection.get("domain") or metric_lookup[selected["metric"]].get("domain"),
+        "ambiguous": False,
+        "filters": list(selection.get("filters", []) or []),
+        "rank": selection.get("rank"),
+    }
+    return {
+        "ok": True,
+        "question": continuation.get("original_question") or reply,
+        "llm_result": llm_result,
+        "selected_metric": selected["metric"],
+        "selected_choice_id": selected.get("id"),
     }
 
 
@@ -958,8 +1122,13 @@ def process_question(
         return _unsupported_domain(domain)
 
     # 2b. ambiguous — model flagged it, OR it proposed more than one metric.
+    # Clarify only when EVERY offered branch is catalog-valid; never ask a
+    # question whose branch would immediately decline as unknown.
     if classification == "ambiguous" or len(proposed_metrics) > 1:
-        return _ambiguous(proposed_metrics)
+        unknown = _check_unknown_metrics(proposed_metrics, catalog)
+        if unknown:
+            return unknown
+        return _ambiguous(proposed_metrics, catalog, question, llm_result)
 
     # 2c. unknown_metric — model flagged it, OR proposed nothing, OR proposed a
     # name absent from the governed catalog (TR3 hallucination guard overrides

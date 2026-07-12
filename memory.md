@@ -63,6 +63,16 @@ Read this chart first. NOTE: `git` writes from THIS session worked cleanly with 
 
 ## Progress Notes
 
+### 2026-07-11 - tpm-agent-amazon @ codex — Clarify-and-continue backend slice gate-2 approved
+
+**Situation:** Human approved the fresh clarify-and-continue increment task list. Scope held: no Decision 2 rerun, no promptfoo install/export, no external LLM eval. Contract decision logged as DECISION_LOG #18: keep the five-category enum, make `ambiguous` optionally non-terminal only when every offered choice is a governed catalog metric, and carry exactly one follow-up through client-provided continuation context.
+
+**Built:** Solutions/software architecture slots updated (`docs/04.TRD.md`, `docs/05.DETAILED_DESIGN.md`); QA gate slot and CI unit list updated (`docs/13.QA_MERGE_GATES.md`, `.github/workflows/conversational_bi_ci.yml`). Backend adds catalog-grounded clarify choice construction and deterministic continuation resolution in `query_translator.py`; `/query` now accepts optional `continuation` and bypasses the LLM on valid follow-up replies. Invalid/still-ambiguous replies decline cleanly and emit no second continuation.
+
+**Verification:** Focused local gate green: `tests.test_clarify_continue tests.test_check_rank_coverage tests.test_check_filter_coverage` = 33/33. CI unit list green: 75/75. Full local unittest discovery green: 81/81. `node eval/selftest_assertions.cjs` green (non-vacuity holds). `compileall backend tests/test_clarify_continue.py` green. Promptfoo full LLM-router eval still NOT run by design/policy.
+
+**Gate-2:** Human accepted the built diff after gate-1 verification. Full promptfoo eval remains blocked/not run. Vendored `docs/agents-reference/` copies are still absent in the repo; this session used installed/master role instructions plus master `ENGINEERING_RULES.md`. Milestone commit follows this note.
+
 ### 2026-07-11 - tpm-agent-amazon @ codex — Claude quarantine stashes dropped after committed rescue
 
 **Situation:** After Decision-2 rescue commit `f6c08c8` landed, human explicitly approved `approve drop quarantine stashes`. Verified stash list contained exactly the two Claude quarantine stashes (`REPEAT unapproved Decision-2 re-point...` and `UNAPPROVED Decision-2 semantic re-point...`), then dropped both with `git stash drop 'stash@{0}'` twice. Final verification: `git stash list` empty; `HEAD=f6c08c8`; worktree still only carries the separate pre-existing `docs/03.PRD.md` edit plus this chart note.
