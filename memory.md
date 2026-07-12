@@ -63,6 +63,10 @@ Read this chart first. NOTE: `git` writes from THIS session worked cleanly with 
 
 ## Progress Notes
 
+### 2026-07-11 - tpm-agent-amazon @ codex — Claude quarantine stashes dropped after committed rescue
+
+**Situation:** After Decision-2 rescue commit `f6c08c8` landed, human explicitly approved `approve drop quarantine stashes`. Verified stash list contained exactly the two Claude quarantine stashes (`REPEAT unapproved Decision-2 re-point...` and `UNAPPROVED Decision-2 semantic re-point...`), then dropped both with `git stash drop 'stash@{0}'` twice. Final verification: `git stash list` empty; `HEAD=f6c08c8`; worktree still only carries the separate pre-existing `docs/03.PRD.md` edit plus this chart note.
+
 ### 2026-07-11 - tpm-agent-amazon @ codex — Decision-2 approved re-run executed; promptfoo blocked by policy
 
 **Situation:** Human approved `approve re-run execution` for the previously deferred Decision-2 semantic re-point. TPM did not pop either Claude quarantine stash; both remain parked as evidence. Re-implemented the switch cleanly: `total_net_revenue` / `total_gross_revenue` now source from `fct_revenue_daily`, token base measures source from `fct_token_usage_minute`, and `semantic_dimensions.yml` exposes conformed `account_size` + `model_family`.
