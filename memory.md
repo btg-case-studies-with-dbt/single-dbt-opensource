@@ -63,6 +63,24 @@ Read this chart first. NOTE: `git` writes from THIS session worked cleanly with 
 
 ## Progress Notes
 
+### 2026-07-11 - tpm-agent-amazon @ codex — Decision-2 approved re-run executed; promptfoo blocked by policy
+
+**Situation:** Human approved `approve re-run execution` for the previously deferred Decision-2 semantic re-point. TPM did not pop either Claude quarantine stash; both remain parked as evidence. Re-implemented the switch cleanly: `total_net_revenue` / `total_gross_revenue` now source from `fct_revenue_daily`, token base measures source from `fct_token_usage_minute`, and `semantic_dimensions.yml` exposes conformed `account_size` + `model_family`.
+
+**Receipts:** `dbt parse --target prod` green (existing `customer_revenue_monthly.v1` deprecation warning only); `dbt build --target prod` green (`PASS=519 WARN=11 ERROR=0 SKIP=0 NO-OP=9 TOTAL=539`); `mf validate-configs --semantic-validation-workers 1` green across manifest, semantic models, dimensions, entities, measures, metrics (`ERRORS: 0`). Direct `mf query` parity green for revenue by `revenue_id__source_region` / `revenue_id__billing_type` and tokens by `usage_id__source_region` / `usage_id__traffic_type`.
+
+**Live-switch finding/fix:** The naive backend smoke initially answered "total net revenue by region" without the region breakdown because the LLM did not reliably map plain "region" to MetricFlow's prefixed `revenue_id__source_region`. Added deterministic dimension aliasing before validation plus known metric-gap overrides so "profit margin" stays `unknown_metric`. Unit suite now `76 tests OK`; patched backend smoke on `8001` returned region rows with `dimensions:["revenue_id__source_region"]`; deterministic local receipt returns `unknown_metric` for profit margin. The served catalog has 44 metrics / 28 dimensions; inspected base metrics expose 6 valid dimensions each, so the prior "4-per-metric" claim is false for this re-run.
+
+**Blocked gate:** promptfoo eval not run. Running it would POST the governed catalog/questions through `/query` to the configured external OpenAI-compatible LLM; policy reviewer rejected the final `/query` rerun without explicit approval for that export. Human later approved proceeding with promptfoo, but policy reviewer still rejected `npx --yes promptfoo@0.121.18 eval --config eval/eval_config.yaml` because it would download/run a third-party tool and export saved eval questions plus the governed catalog externally. Treat full LLM-router regression as still blocked/not run.
+
+### 2026-07-11 - tpm-agent-amazon @ codex — Claude Decision-2 rescue audit complete; re-run plan prepared, not executed
+
+**Situation:** Human asked Codex TPM to rescue a Claude session that re-materialized the deferred Decision-2 semantic `fct_` re-point after prior containment. Read-only audit confirmed current tree is contained: only `docs/03.PRD.md` is modified; two quarantine stashes exist (`stash@{0}` repeat re-point, `stash@{1}` first unapproved re-point); current semantic source still points at rollups (`customer_revenue_weekly`, `token_usage_customer_monthly`), and current generated catalog maps base metrics to old rollups.
+
+**Audit finding:** `stash@{0}` is not a clean apply artifact. It changes three semantic YAML files: adds `revenue_daily` on `fct_revenue_daily`, adds `token_usage_minute` on `fct_token_usage_minute`, relocates base additive revenue/token measures, and adds untracked `semantic_dimensions.yml` exposing only `account_size` and `model_family`. `stash@{1}` also included an unapproved `docs/2.TOOLSTACK.md`; per human note, do not chase vendoring/toolstack here.
+
+**Prepared path:** Treat Decision 2 as a fresh approved increment only if the human explicitly approves the next implementation task list. Do not pop either stash. Use the stash as design evidence only, then re-implement under analytics-engineer ownership with real receipts: `dbt parse`, `dbt build --target prod`, `mf validate-configs`, generated catalog inspection, representative `mf query` parity, backend `/health` + `/query` smoke, and both promptfoo eval gates.
+
 ### 2026-07-11 (overnight) - tpm-agent-amazon @ cli — Steps 1-5 driven; agentic investigation loop BUILT
 
 **Steps 1-4 CLOSED + signed off** (DECISION_LOG #11/#12): M1 governed-query contract (metric-routing 98.6%, worst-run 95.7%, 0 hallucinations, MetricFlow-only, clarify-continue deferred); M2 reliability (dbt RI fix committed + `int_revenue_daily` stale-yml fixed → `dbt build --target prod` exits 0 clean, no `--exclude` — the real fresh-clone blocker, NOT the RI post_hooks); M3 UI parity (frontend already complete, `/`→`/frontend/` 307 redirect added); M4 ORR (`07.ORR.md`, 13/13 gates green — **exposed key ROTATED + verified, gate #13 closed** `f7c9b44`).

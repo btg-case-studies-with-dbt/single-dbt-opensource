@@ -1,5 +1,43 @@
 semantic_models:
 
+  - name: token_usage_minute
+    description: "Minute-grain token usage fact. Base additive token measures re-pointed onto fct_token_usage_minute for region and minute-level decomposition."
+    model: ref('fct_token_usage_minute')
+    defaults:
+      agg_time_dimension: minute_timestamp
+    entities:
+      - name: usage_id
+        type: primary
+      - name: account_id
+        type: foreign
+      - name: model_variant
+        type: foreign
+    dimensions:
+      - name: minute_timestamp
+        type: time
+        type_params:
+          time_granularity: minute
+      - name: source_region
+        type: categorical
+      - name: traffic_type
+        type: categorical
+    measures:
+      - name: total_tokens
+        agg: sum
+        create_metric: false
+      - name: total_requests
+        expr: request_count
+        agg: sum
+        create_metric: false
+      - name: total_input_tokens
+        expr: input_tokens
+        agg: sum
+        create_metric: false
+      - name: total_output_tokens
+        expr: output_tokens
+        agg: sum
+        create_metric: false
+
   - name: token_usage_customer_monthly
     description: "Monthly token usage at customer + model + region level."
     model: ref('token_usage_customer_monthly')
@@ -19,18 +57,6 @@ semantic_models:
       - name: model_type
         type: categorical
     measures:
-      - name: total_tokens
-        agg: sum
-        create_metric: false
-      - name: total_requests
-        agg: sum
-        create_metric: false
-      - name: total_input_tokens
-        agg: sum
-        create_metric: false
-      - name: total_output_tokens
-        agg: sum
-        create_metric: false
       - name: error_rate_pct
         agg: average
         create_metric: false

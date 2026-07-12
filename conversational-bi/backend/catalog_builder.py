@@ -1,11 +1,10 @@
 """
 Builds a compact LLM-facing catalog from the dbt semantic manifest.
 
-Reads dbt/target/semantic_manifest.json, cross-references metric names with
-docs/10.METRIC_DICTIONARY.csv for domain tags (the generated YAML has stale
-``domain: unknown`` for many metrics).  Also reads the generated YAML catalog
-for valid-dimension and valid-grain information per metric — that data lives
-only in the YAML, not in the raw manifest.
+Reads dbt/target/semantic_manifest.json and cross-references metric names with
+docs/10.METRIC_DICTIONARY.csv for domain tags. Valid dimensions are derived from
+the semantic manifest so the app sees fresh dbt/MetricFlow metadata after
+``dbt parse``; the generated YAML catalog is kept only as a fallback.
 
 Output is a dict with keys ``domains``, ``metrics``, ``dimensions``.
 """
@@ -172,6 +171,111 @@ def _load_dimension_catalog() -> tuple[list[dict[str, Any]], dict[str, list[str]
     return dims_list, metric_dims
 
 
+_SURROGATE_FACT_ENTITIES = {"revenue_id", "usage_id", "quota_week_id"}
+
+
+def _metric_measure_names(metric: dict[str, Any]) -> list[str]:
+    """Return the measure names a metric depends on."""
+    tp = metric.get("type_params", {}) or {}
+    measures = tp.get("input_measures") or tp.get("measures") or []
+    names: list[str] = []
+    for measure in measures:
+        if isinstance(measure, dict) and measure.get("name"):
+            names.append(str(measure["name"]))
+    return names
+
+
+def _semantic_entity_names(semantic_model: dict[str, Any]) -> list[str]:
+    """Return declared entity names for a semantic model."""
+    return [
+        str(entity["name"])
+        for entity in semantic_model.get("entities", [])
+        if entity.get("name")
+    ]
+
+
+def _primary_entity_name(semantic_model: dict[str, Any]) -> str | None:
+    """Return the primary entity name, if the semantic model declares one."""
+    for entity in semantic_model.get("entities", []):
+        if entity.get("type") == "primary" and entity.get("name"):
+            return str(entity["name"])
+    return None
+
+
+def _semantic_dimension_names(semantic_model: dict[str, Any]) -> list[str]:
+    """Return non-time dimension names declared directly on a semantic model."""
+    names: list[str] = []
+    for dimension in semantic_model.get("dimensions", []):
+        if dimension.get("type") == "time":
+            continue
+        name = dimension.get("name")
+        if name:
+            names.append(str(name))
+    return names
+
+
+def _build_dimension_catalog_from_manifest(
+    manifest: dict[str, Any],
+) -> tuple[list[dict[str, Any]], dict[str, list[str]]]:
+    """Derive LLM-facing valid dimensions from the fresh semantic manifest.
+
+    MetricFlow exposes business entity attributes as ``entity__dimension`` while
+    fact-local degenerate dimensions stay bare. This mirrors the command names
+    users can pass to ``mf query --group-by`` and avoids the stale
+    ``catalog_for_llm.yaml`` problem after a semantic-model re-point.
+    """
+    entity_dimensions: dict[str, list[str]] = {}
+    measure_models: dict[str, list[dict[str, Any]]] = {}
+
+    for semantic_model in manifest.get("semantic_models", []):
+        primary = _primary_entity_name(semantic_model)
+        local_dims = _semantic_dimension_names(semantic_model)
+
+        # Only measure-less semantic models are conformed dimensions. Do not let
+        # other metric-bearing rollups become implicit dimension sources for the
+        # re-pointed facts.
+        if primary and not semantic_model.get("measures"):
+            entity_dimensions.setdefault(primary, [])
+            entity_dimensions[primary].extend(local_dims)
+
+        for measure in semantic_model.get("measures", []):
+            name = measure.get("name")
+            if name:
+                measure_models.setdefault(str(name), []).append(semantic_model)
+
+    metric_dims: dict[str, list[str]] = {}
+    all_dimension_names: set[str] = set()
+
+    for metric in manifest.get("metrics", []):
+        metric_name = metric.get("name")
+        if not metric_name:
+            continue
+
+        dims: list[str] = []
+        for measure_name in _metric_measure_names(metric):
+            for semantic_model in measure_models.get(measure_name, []):
+                primary = _primary_entity_name(semantic_model)
+
+                for entity_name in _semantic_entity_names(semantic_model):
+                    if entity_name not in _SURROGATE_FACT_ENTITIES:
+                        dims.append(entity_name)
+                    for entity_dim in entity_dimensions.get(entity_name, []):
+                        dims.append(f"{entity_name}__{entity_dim}")
+
+                for local_dim in _semantic_dimension_names(semantic_model):
+                    if primary:
+                        dims.append(f"{primary}__{local_dim}")
+                    else:
+                        dims.append(local_dim)
+
+        deduped = list(dict.fromkeys(dims))
+        metric_dims[str(metric_name)] = deduped
+        all_dimension_names.update(deduped)
+
+    dimensions = [{"name": name, "type": "categorical"} for name in sorted(all_dimension_names)]
+    return dimensions, metric_dims
+
+
 # ── public API ────────────────────────────────────────────────────────────
 
 
@@ -218,8 +322,12 @@ def build_catalog(
             "Retired/absorbed variants may be exposed to the model."
         )
 
-    # dimension info from YAML catalog
-    all_dimensions, metric_dims = _load_dimension_catalog()
+    # dimension info from the fresh manifest; YAML stays a fallback for older
+    # target directories that lack enough manifest detail.
+    yaml_dimensions, yaml_metric_dims = _load_dimension_catalog()
+    manifest_dimensions, manifest_metric_dims = _build_dimension_catalog_from_manifest(manifest)
+    all_dimensions = manifest_dimensions or yaml_dimensions
+    metric_dims = {**yaml_metric_dims, **manifest_metric_dims}
 
     # per-measure aggregation map (drives the loop's additivity gate)
     measure_agg = _build_measure_agg_map(manifest)

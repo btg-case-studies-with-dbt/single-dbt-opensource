@@ -60,6 +60,14 @@ def _unknown_metric(proposed: list[str]) -> dict[str, Any]:
     }
 
 
+def _ungoverned_metric_gap(proposed: list[str], phrase: str) -> dict[str, Any]:
+    return {
+        "category": "unknown_metric",
+        "message": f"No governed metric measures the requested concept: {phrase}",
+        "proposed_metrics": proposed,
+    }
+
+
 def _ambiguous(metrics: list[str]) -> dict[str, Any]:
     return {
         "category": "ambiguous",
@@ -175,6 +183,29 @@ def _check_domain(
     return None
 
 
+_KNOWN_UNGOVERNED_METRIC_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\bprofit\s+margin\b", re.I), "profit margin"),
+    (re.compile(r"\bgross\s+margin\b", re.I), "gross margin"),
+    (re.compile(r"\brecurring\s+revenue\b", re.I), "recurring revenue"),
+    (re.compile(r"\brevenue\s+growth\s+rate\b|\bgrowth\s+rate\b", re.I), "growth rate"),
+    (re.compile(r"\brefund\s+rate\b", re.I), "refund rate"),
+    (re.compile(r"\bcache\s+hit\s+rate\b", re.I), "cache hit rate"),
+    (re.compile(r"\b(?:input|output|total)?\s*token\s+cost\b", re.I), "token cost"),
+    (re.compile(r"\bcost\s+per\s+user\b", re.I), "cost per user"),
+    (re.compile(r"\bremaining\s+quota\b", re.I), "remaining quota"),
+    (re.compile(r"\brate\s+limit\b", re.I), "rate limit"),
+    (re.compile(r"\btrained\s+on\b", re.I), "training-token corpus"),
+    (re.compile(r"\bwhen\s+will\b.*\bquota\s+peak\b", re.I), "quota forecast"),
+)
+
+
+def _known_ungoverned_metric_gap(question: str) -> str | None:
+    for pattern, phrase in _KNOWN_UNGOVERNED_METRIC_PATTERNS:
+        if pattern.search(question):
+            return phrase
+    return None
+
+
 # ── TR7: server-side dimension validation ─────────────────────────────
 
 
@@ -203,6 +234,102 @@ def validate_dimensions(
     if invalid:
         logger.info("Dimensions filtered out (invalid for selected metrics): %s", invalid)
     return valid
+
+
+def _valid_dimensions_for_metrics(
+    metric_names: list[str],
+    catalog: dict[str, Any],
+) -> list[str]:
+    """Return de-duplicated governed dimensions available to the metric set."""
+    metric_lookup = {m["name"]: m for m in catalog.get("metrics", [])}
+    dims: list[str] = []
+    for name in metric_names:
+        metric = metric_lookup.get(name)
+        if metric:
+            dims.extend(metric.get("valid_dimensions", []))
+    return list(dict.fromkeys(dims))
+
+
+def _normalize_dimension_alias(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+
+def _aliases_for_dimension(dimension: str) -> set[str]:
+    """Human aliases for governed dimension names, including prefixed mf names."""
+    local_name = dimension.split("__")[-1]
+    aliases = {
+        _normalize_dimension_alias(dimension),
+        _normalize_dimension_alias(local_name),
+    }
+    canonical = _normalize_dimension_alias(local_name)
+    if canonical == "source region":
+        aliases.add("region")
+    elif canonical == "traffic type":
+        aliases.add("traffic")
+    elif canonical == "billing type":
+        aliases.add("billing")
+    elif canonical == "account size":
+        aliases.update({"customer size", "customer segment", "account segment"})
+    elif canonical == "model family":
+        aliases.add("model type")
+    elif canonical == "model variant":
+        aliases.add("model")
+    elif canonical == "account id":
+        aliases.add("customer")
+    return aliases
+
+
+def _question_requests_breakdown(question: str, alias: str) -> bool:
+    """Detect explicit group-by phrasing for one human dimension alias."""
+    alias_pattern = re.escape(alias).replace(r"\ ", r"\s+")
+    return bool(
+        re.search(
+            rf"\b(?:by|per|across|grouped\s+by|broken\s+down\s+by|breakdown\s+by)\s+"
+            rf"(?:the\s+)?{alias_pattern}s?\b",
+            question.lower(),
+        )
+    )
+
+
+def infer_breakdown_dimensions(
+    metric_names: list[str],
+    proposed_dims: list[str],
+    catalog: dict[str, Any],
+    question: str,
+) -> list[str]:
+    """Map user-facing breakdown words to exact governed dimension names.
+
+    MetricFlow exposes fact-local dimensions with prefixed names such as
+    ``revenue_id__source_region``. The model can fail to select that cryptic
+    name for plain language like "by region"; this deterministic pass adds the
+    exact governed dimension only when the alias maps to a single valid
+    dimension for the selected metric.
+    """
+    valid_dims = _valid_dimensions_for_metrics(metric_names, catalog)
+    if not valid_dims:
+        return proposed_dims
+
+    alias_targets: dict[str, list[str]] = {}
+    for dim in valid_dims:
+        for alias in _aliases_for_dimension(dim):
+            alias_targets.setdefault(alias, []).append(dim)
+
+    resolved: list[str] = []
+    for dim in proposed_dims or []:
+        if dim in valid_dims:
+            resolved.append(dim)
+            continue
+        targets = alias_targets.get(_normalize_dimension_alias(str(dim)), [])
+        if len(targets) == 1:
+            resolved.append(targets[0])
+        else:
+            resolved.append(dim)
+
+    for alias, targets in alias_targets.items():
+        if len(targets) == 1 and _question_requests_breakdown(question, alias):
+            resolved.append(targets[0])
+
+    return list(dict.fromkeys(resolved))
 
 
 # ── filter-coverage guard (never confidently wrong) ───────────────────────
@@ -817,6 +944,9 @@ def process_question(
     proposed_metrics = llm_result.get("metrics", [])
     domain = llm_result.get("domain")
     supported_domains = set(catalog.get("domains", []))
+    metric_gap = _known_ungoverned_metric_gap(question)
+    if metric_gap:
+        return _ungoverned_metric_gap(proposed_metrics, metric_gap)
 
     # 2a. unsupported_domain — checked FIRST so an out-of-catalog subject
     # (which also carries metrics: []) is not swallowed by the unknown_metric
@@ -867,7 +997,12 @@ def process_question(
         return rank_abstain
 
     # ── 5. TR7: validate dimensions ────────────────────────────────────
-    proposed_dims = llm_result.get("dimensions", [])
+    proposed_dims = infer_breakdown_dimensions(
+        proposed_metrics,
+        llm_result.get("dimensions", []),
+        catalog,
+        question,
+    )
     valid_dims = validate_dimensions(proposed_metrics, proposed_dims, catalog)
 
     # A valid rank survived the guard: ensure its by_field is in the group-by so

@@ -1,0 +1,21 @@
+semantic_models:
+
+  - name: dim_customer
+    description: "Customer/account conformed dimension. Governed attribute: account_size."
+    model: ref('dim_customer')
+    entities:
+      - name: account_id
+        type: primary
+    dimensions:
+      - name: account_size
+        type: categorical
+
+  - name: dim_model
+    description: "Model conformed dimension. Governed attribute: model_family."
+    model: ref('dim_model')
+    entities:
+      - name: model_variant
+        type: primary
+    dimensions:
+      - name: model_family
+        type: categorical

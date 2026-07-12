@@ -1,5 +1,35 @@
 semantic_models:
 
+  - name: revenue_daily
+    description: "Daily revenue fact. Base additive revenue measures re-pointed onto fct_revenue_daily for region and day-level decomposition."
+    model: ref('fct_revenue_daily')
+    defaults:
+      agg_time_dimension: revenue_date
+    entities:
+      - name: revenue_id
+        type: primary
+      - name: account_id
+        type: foreign
+      - name: model_variant
+        type: foreign
+    dimensions:
+      - name: revenue_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: source_region
+        type: categorical
+      - name: billing_type
+        type: categorical
+    measures:
+      - name: total_net_revenue
+        expr: net_revenue
+        agg: sum
+        create_metric: false
+      - name: total_gross_revenue
+        agg: sum
+        create_metric: false
+
   - name: customer_revenue_weekly
     description: "Weekly revenue aggregated at customer level."
     model: ref('customer_revenue_weekly')
@@ -17,17 +47,9 @@ semantic_models:
         type: categorical
       - name: vertical
         type: categorical
-      - name: account_size
-        type: categorical
       - name: company_name
         type: categorical
     measures:
-      - name: total_net_revenue
-        agg: sum
-        create_metric: false
-      - name: total_gross_revenue
-        agg: sum
-        create_metric: false
       - name: active_days
         agg: sum
         create_metric: false
@@ -140,8 +162,6 @@ semantic_models:
         type: time
         type_params:
           time_granularity: week
-      - name: model_family
-        type: categorical
       - name: model_publisher
         type: categorical
       - name: source_region
