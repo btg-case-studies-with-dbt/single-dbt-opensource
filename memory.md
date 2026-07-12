@@ -10,19 +10,18 @@
 ## Alerts
 
 - Stay inside this project's workspace unless loading explicitly required agent instructions.
-- `conversational-bi/` query path is committed (Waves 1+2) but NOT verified green — TR12 eval gate STILL not run. `/health` IS now green (Step 1, 2026-07-09); `/query` + eval still pending.
+- `conversational-bi/` query path works E2E for the local case-study scope; clarify continuation live smoke passed 2026-07-11. Full promptfoo LLM-router eval is still NOT run/deferred unless explicit export/tooling approval is given.
 - Backend boot is now reproducible (Step 1): use **Python 3.11**, fresh venv, `pip install -r conversational-bi/requirements.txt`, then `cd conversational-bi && python -m uvicorn backend.main:app --port 8000`. Full recipe in `conversational-bi/README.md`. System 3.9 and Homebrew 3.14 both lack part of the stack — do not use them.
 - The `/query` backend is NOT a docker-compose service. `docker compose up -d` starts Postgres/Airflow/Metabase/pgAdmin only. Start the API by hand per the recipe above, in its own terminal.
-- Stray `.cbi-verify-venv/` may sit in repo root (leftover throwaway venv) — do NOT commit it; `rm -rf .cbi-verify-venv/`.
 - `git` writes via the device bridge leave stale `.git/*.lock` files it cannot unlink, blocking the next op. Run git from the Mac terminal, not device_bash.
 
 ## Open Problems
 
-- Retriever (`evidence_retriever.py`) uses a hardcoded 3-ticket fixture, not a governed dbt seed. Governed-seed→retriever wiring is unbuilt (was C1's purpose; C1 deferred).
+- Ticket-RAG was retired; governed-evidence investigation is local/synthetic and correlation-only. Do not resurrect the hardcoded fixture path without a fresh approved increment.
 - Retrieval-quality eval (Wave 2 open item) not started — owner: ai-architect.
 - ✅ FIXED 2026-07-09 (Step 5, DECISION_LOG #8) — eval harness now asserts metric selection, not just category. Postprocess reduction dropped; metric assert real (promptfoo `value:` shape, fails on mismatch); domain assert removed; validated via `promptfoo validate`.
-- **NEW blocker for Step 7 (owner: ai-architect, IN FLIGHT).** promptfoo 0.121.18 rejects the flat `eval/domain_questions.jsonl` at the test-loader (wants `vars:` wrapper or `.csv`). Fixture conversion routed to ai-architect; jsonl→csv (same columns) proven to validate. Blocks the Step 7 run until converted.
-- **TRD TR12 wording flag (route to solutions-architect).** `docs/04.TRD.md` TR12 describes category routing; the enforced bar is metric selection. One-line reconciliation. Coverage of dimensions/time_range (group-by/filters) DEFERRED — scope-to-increment.
+- Full promptfoo LLM-router eval remains not run/deferred because it requires third-party tooling and external export approval.
+- ✅ FIXED 2026-07-11 — TRD TR12 wording reconciled to the metric-selection bar. Coverage of dimensions/time_range (group-by/filters) remains DEFERRED — scope-to-increment.
 
 ## Decisions
 
@@ -31,6 +30,10 @@
 - 2026-07-09: Gold-layer constraint defect fixed + verified (`dbt build` green, ERROR=0). Root cause: `dim_region/dim_model/dim_customer` hand-rolled PKs via a `post_hook` drop+add; on `table` rebuild dbt renames the live table to `__dbt_backup` (PK + index travel with it), so the hook's `drop constraint` hit the backup whose PK the fact FKs still reference → Postgres refused. Broke every 2nd+ build; first build passed. Fix (analytics-engineer-dbt, Option b): removed PK post_hooks from the 3 dims + FK post_hooks from the 3 facts (kept rebuild-safe fact self-PKs). RI now enforced by existing dbt `relationships`/`unique`/`not_null` tests (green). Two-way-door governance trade: DB-enforced FKs → dbt-test-enforced RI. Reversible (restore post_hooks) but re-introduces the rebuild break. NOT yet committed.
 
 ## Next Actions (for next session)
+
+### ▶ CURRENT CLOSEOUT NEXT ACTION — final human sign-off
+
+Local case-study closeout is ready after `69d4005` shipped and live clarify continuation smoke passed. Next human-owned action: make the final decision in `docs/11.HUMAN_SIGNOFF.md` after reviewing `docs/08.Launch.md`. Full promptfoo eval, retrieval-quality eval, 8-family rebuild, default-collision cleanup, production readiness, real-customer data, and multi-user deployment stay deferred outside this closeout.
 
 ### ✅ DONE — RANKING/ARGMAX GUARD (committed `d3d5747`, 2026-07-10, gate-2 passed)
 
@@ -62,6 +65,14 @@ Read this chart first. NOTE: `git` writes from THIS session worked cleanly with 
 8. **Retrieval-quality eval** (Wave 2) — ai-architect, not started. **TRD TR12 wording** reconciliation — solutions-architect (flagged).
 
 ## Progress Notes
+
+### 2026-07-11 - tpm-agent-amazon @ codex — Closeout push and live clarify smoke complete; final sign-off pending
+
+**Situation:** Human approved Gate 2 for clarify-and-continue, then approved the 8-step closeout block. Pushed `69d4005` to `origin/dev` and verified local `HEAD` matched remote. CI visibility was reachable through `gh run list`, but the visible workflow listing only showed an older PR-triggered run; the push itself did not surface a fresh run.
+
+**Live smoke:** Started the FastAPI backend locally on `127.0.0.1:8002` and exercised clarify continuation without a second LLM call. Invalid reply `gross margin` declined as `unknown_metric` with `invalid_clarification_reply`; still-ambiguous reply `utilization` declined as terminal `ambiguous` with `clarification_reply_ambiguous`; clear reply `tpm` answered `peak_tpm_utilization` via MetricFlow with `model_variant` rows and preserved the requested time range.
+
+**Closeout state:** Updated launch/signoff/program slots to say local architecture case-study ready, final human sign-off pending. Full promptfoo LLM-router eval was not run and remains deferred unless explicit export/tooling approval is given. Deferred outside closeout: retrieval-quality eval, 8-family semantic-layer rebuild, default-collision residual, production readiness, real-customer data, and multi-user deployment.
 
 ### 2026-07-11 - tpm-agent-amazon @ codex — Clarify-and-continue backend slice gate-2 approved
 
