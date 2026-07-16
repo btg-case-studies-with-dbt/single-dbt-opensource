@@ -1,6 +1,6 @@
 # .github/workflows/conversational_bi_ci.yml
 # QA merge gate for Step 5 (agentic investigation loop) — the BACKEND-FREE gates only.
-# Policy: docs/13.QA_MERGE_GATES.md (gates G1 + G2). Requirement: 04.TRD.md TR12.8.
+# Policy: docs/test_artifacts/7.QA_MERGE_GATES.md (gates G1 + G2). Requirement: 5.TRD.md TR12.8.
 #
 # What this enforces (BLOCKS merge):
 #   G1  Backend unit suite GREEN             — unittest, no live backend needed

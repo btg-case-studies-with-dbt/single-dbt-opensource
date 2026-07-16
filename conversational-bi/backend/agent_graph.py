@@ -1,7 +1,7 @@
 """Bounded agentic investigation loop — Evidence-from-Governed-Data.
 
-Design: ``docs/05.DETAILED_DESIGN.md`` §"Agentic Investigation Loop +
-Evidence-from-Governed-Data" (APPROVED gate-2), contract ``docs/04.TRD.md``
+Design: ``docs/6.DETAILED_DESIGN.md`` §"Agentic Investigation Loop +
+Evidence-from-Governed-Data" (APPROVED gate-2), contract ``docs/5.TRD.md``
 TR12.1–TR12.8, acceptance target ``eval/investigation_assertions.js``.
 
 **PIVOT (this rewrite):** the prior ticket-RAG nodes (`retrieve_evidence_node`,

@@ -1,34 +1,52 @@
 # docs/ — Program Documentation
 
-Layout (per-case-study chains from day one; human decision 2026-07-06, DECISION_LOG #4):
+Layout (per-case-study chains from day one; original decision in `8.DECISION_LOG.md` #4, current structure approved 2026-07-15):
 
-- `docs/` — the Working Backwards document chain for this case study, defined by `00.wb_checklist.csv`.
-- `docs/` root — program-wide artifacts only: `DECISION_LOG.md` (canonical decision log), `agents-reference/` (vendored role docs), this README.
+- `docs/` — the numbered Working Backwards chain defined by `0.checklist.csv`.
+- `docs/contracts/` — governed metric and data/API contracts.
+- `docs/design/` — product-specific design artifacts.
+- `docs/guardrails/` — the aiTechne toolstack and refreshed engineering rules.
+- `docs/test_artifacts/` — acceptance policies, test plans, and durable test evidence.
+- `docs/work_records/` — supporting analyses and non-canonical delivery records.
+- `docs/tpm-reference/` — refreshed TPM runbook and role registry.
 
 ## Canonical Reading Order (per case-study chain)
 
 | Order | File | Purpose |
 |---:|---|---|
-| 0 | `00.wb_checklist.csv` | Canonical document map, stage, owner, and source inputs. |
-| 1 | `01.idea.md` | One-page idea pitch. |
-| 2 | `02.PR_FAQ.md` | Working Backwards PR/FAQ. |
-| 3 | `03.PRD.md` | Consolidated product requirements. |
-| 4 | `03.UID.md` | Consolidated UI details. |
-| 5 | `04.TRD.md` | Consolidated technical requirements. |
-| 6 | `05.DETAILED_DESIGN.md` | Consolidated data/software design and agentic BI seams. |
-| 7 | `06.PROGRAM_PLAN.md` | Delivery plan and critical path. |
-| 8 | `07.ORR.md` | Operational readiness review. |
-| 9 | `08.Launch.md` | Launch/go-no-go document. |
-| 10 | `09.COE_TEMPLATE.md` | Correction of Error template. |
-| 11 | `10.METRIC_DICTIONARY.csv` | Certified governed metric dictionary. |
-| 12 | `11.HUMAN_SIGNOFF.md` | Human approval gate. |
-| 13 | `12.Marketing.md` | Marketing requirements and claims guardrails. |
-| 14 | `13.QA_MERGE_GATES.md` | QA merge-gate policy: what blocks a merge vs warns (Step 5 loop). |
+| 0 | `0.checklist.csv` | Canonical document map, stage, owner, and source inputs. |
+| 1 | `1.idea.md` | One-page idea pitch. |
+| 2 | `2.PR_FAQ.md` | Working Backwards PR/FAQ. |
+| 3 | `3.PRD.md` | Consolidated product requirements. |
+| 4 | `4.UID.md` | Consolidated UI details. |
+| 5 | `5.TRD.md` | Consolidated technical requirements. |
+| 6 | `6.DETAILED_DESIGN.md` | Consolidated data/software design and agentic BI seams. |
+| 7 | `7.PROGRAM_PLAN.md` | Delivery plan and critical path. |
+| 8 | `8.DECISION_LOG.md` | Authoritative decision record. |
+| 9 | `9.ORR.md` | Operational readiness review. |
+| 10 | `10.PRELAUNCH_SECURITY_CHECKLIST.md` | Reserved template slot; not yet authored in this project. |
+| 11 | `11.Launch.md` | Launch/go-no-go document. |
+| 12 | `12.HUMAN_SIGNOFF.md` | Human approval gate. |
+| 13 | `13.COE_TEMPLATE.md` | Correction of Error template. |
+
+## Supporting Artifacts
+
+| File | Purpose |
+|---|---|
+| `contracts/1.METRIC_DICTIONARY.csv` | Certified governed metric dictionary. |
+| `guardrails/1.TOOLSTACK.md` | Approved aiTechne technology stack; dbt is explicitly allowed. |
+| `guardrails/2.ENGINEERING_RULES.md` | Refreshed family engineering rules. |
+| `test_artifacts/7.QA_MERGE_GATES.md` | Merge-blocking QA policy and reviewer runbook. |
+| `work_records/1.MARKETING_REQUIREMENTS.md` | Marketing requirements and claims guardrails. |
+| `work_records/2.BEDROCK_VS_OPENSOURCE.md` | Architecture option comparison. |
+| `work_records/3.AGENTIC_BI_BRIEF.md` | Business-leader readiness guide. |
+| `tpm-reference/TPM_RUNBOOK.md` | Refreshed TPM operating mechanism. |
+| `tpm-reference/registry.md` | Refreshed role-routing registry. |
 
 ## Consolidation Note
 
 The older source/supporting files were consolidated into the canonical chain and
-removed from this folder. Use `00.wb_checklist.csv` as the document map and the
+removed from this folder. Use `0.checklist.csv` as the document map and the
 canonical files above as the current program answer.
 
 ## Architecture Rule

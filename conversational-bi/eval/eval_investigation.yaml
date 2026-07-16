@@ -1,6 +1,6 @@
 # promptfoo eval config — Agentic Investigation Loop: the NEVER-FABRICATE gate.
 # Task 5.4 (ai-architect). This is the TARGET the SSE builds the loop to pass
-# (eval-first). Design: docs/05.DETAILED_DESIGN.md "Agentic Investigation Loop"
+# (eval-first). Design: docs/6.DETAILED_DESIGN.md "Agentic Investigation Loop"
 # (APPROVED gate-2 2026-07-11) + DECISION_LOG #13/#14. Decision 1 = (A): the loop
 # fires on investigative intent only.
 #

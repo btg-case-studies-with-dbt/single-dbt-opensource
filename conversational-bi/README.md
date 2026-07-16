@@ -12,7 +12,7 @@ venv** and proves `GET /health` returns **200**.
 - **dbt build artifacts present** (the catalog is read from them at startup):
   - `../dbt/target/semantic_manifest.json`
   - `../dbt/target/catalog_for_llm.yaml`
-  - `../docs/10.METRIC_DICTIONARY.csv`
+  - `../docs/contracts/1.METRIC_DICTIONARY.csv`
   Regenerate with `dbt parse` from the `dbt/` project if missing.
 - No `.env` is required for `/health` (it makes no LLM call).
 

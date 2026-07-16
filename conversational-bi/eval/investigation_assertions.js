@@ -1,7 +1,7 @@
 // Never-fabricate assertions for the Agentic Investigation Loop (task 5.4).
 // SINGLE SOURCE OF TRUTH: referenced by eval_investigation.yaml (promptfoo)
 // AND by selftest_assertions.cjs (non-vacuity proof, runnable before the loop
-// exists). Design: docs/05.DETAILED_DESIGN.md "Agentic Investigation Loop"
+// exists). Design: docs/6.DETAILED_DESIGN.md "Agentic Investigation Loop"
 // (APPROVED gate-2 2026-07-11) + DECISION_LOG #13/#14. Decision 1 = (A):
 // the loop fires on investigative intent only.
 //

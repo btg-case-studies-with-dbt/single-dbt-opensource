@@ -2,7 +2,7 @@
 Builds a compact LLM-facing catalog from the dbt semantic manifest.
 
 Reads dbt/target/semantic_manifest.json and cross-references metric names with
-docs/10.METRIC_DICTIONARY.csv for domain tags. Valid dimensions are derived from
+docs/contracts/1.METRIC_DICTIONARY.csv for domain tags. Valid dimensions are derived from
 the semantic manifest so the app sees fresh dbt/MetricFlow metadata after
 ``dbt parse``; the generated YAML catalog is kept only as a fallback.
 
@@ -25,7 +25,7 @@ MANIFEST_PATH = os.environ.get(
     "MF_MANIFEST_PATH", "../dbt/target/semantic_manifest.json"
 )
 DICTIONARY_PATH = os.environ.get(
-    "MF_DICTIONARY_PATH", "../docs/10.METRIC_DICTIONARY.csv"
+    "MF_DICTIONARY_PATH", "../docs/contracts/1.METRIC_DICTIONARY.csv"
 )
 YAML_CATALOG_PATH = os.environ.get(
     "MF_YAML_CATALOG_PATH", "../dbt/target/catalog_for_llm.yaml"
@@ -59,7 +59,7 @@ _RETIRED_STATUS_TOKENS = ("deprecat", "absorb", "retired", "superseded")
 def _load_approved_metric_names() -> set[str]:
     """Return the governed allowlist of metric names from the dictionary CSV.
 
-    The metric dictionary (``docs/10.METRIC_DICTIONARY.csv``) is the single
+    The metric dictionary (``docs/contracts/1.METRIC_DICTIONARY.csv``) is the single
     source of truth for which metrics are canonical vs. retired. Every listed
     ``metric_name`` is approved unless a status/approved_status column explicitly
     marks it deprecated/absorbed. Any metric in the semantic manifest that is
